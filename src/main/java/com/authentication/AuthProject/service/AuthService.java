@@ -1,5 +1,6 @@
 package com.authentication.AuthProject.service;
 
+import com.authentication.AuthProject.dto.LoginRequest;
 import com.authentication.AuthProject.dto.SignupRequest;
 import com.authentication.AuthProject.model.User;
 import com.authentication.AuthProject.repository.UserRepository;
@@ -32,4 +33,17 @@ public class AuthService {
 
     }
 
+    public String login(LoginRequest request) {
+        User user = repository.findByEmail(request.getEmail()).orElse(null);
+
+        if(user == null) {
+            return "User not found";
+        }
+
+        if(!user.getPassword().equals(request.getPassword())) {
+            return "Invalid Password";
+        }
+
+        return "Login Successful";
+    }
 }

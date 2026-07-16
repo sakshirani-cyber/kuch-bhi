@@ -1,5 +1,6 @@
 package com.authentication.AuthProject.controller;
 
+import com.authentication.AuthProject.dto.LoginRequest;
 import com.authentication.AuthProject.dto.SignupRequest;
 import com.authentication.AuthProject.service.AuthService;
 import org.springframework.stereotype.Controller;
@@ -31,5 +32,21 @@ public class AuthController {
 
         return service.signup(request);
 
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
+
+    @PostMapping("/login")
+    @ResponseBody
+    public String login(@RequestBody LoginRequest request) {
+        return service.login(request);
+    }
+
+    @GetMapping("/home")
+    public String homePage() {
+        return "home";
     }
 }
