@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #111;
+      color: #ddd;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app { width: 100%; max-width: 380px; padding: 16px; }
+
+    .card {
+      background: #1c1c1c;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 40px 36px;
+    }
+
+    .brand {
+      font-size: 16px;
+      font-weight: 600;
+      color: #aaa;
+      letter-spacing: 0.5px;
+      margin-bottom: 32px;
+    }
+
+    h1 { font-size: 22px; font-weight: 600; color: #eee; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 28px; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .form-group { margin-bottom: 16px; }
+    label { display: block; font-size: 12px; font-weight: 500; color: #777; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.4px; }
+
+    input {
+      width: 100%;
+      background: #141414;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      padding: 11px 13px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #ddd;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus { border-color: #555; }
+    input::placeholder { color: #333; }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 6px;
+      position: relative;
+    }
+    .btn-primary {
+      background: #e0e0e0;
+      color: #111;
+    }
+    .btn-primary:hover { background: #ccc; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .btn .spinner {
+      display: none;
+      width: 14px; height: 14px;
+      border: 2px solid #555;
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+    }
+    .btn.loading .spinner { display: block; }
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .link-text {
+      text-align: center;
+      font-size: 13px;
+      color: #555;
+      margin-top: 18px;
+    }
+    .link-text button {
+      background: none; border: none; color: #aaa;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      font-family: inherit; padding: 0;
+      transition: color 0.15s;
+    }
+    .link-text button:hover { color: #ddd; }
+
+    .alert {
+      padding: 10px 13px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 18px;
+      display: none;
+    }
+    .alert.show { display: block; }
+    .alert-error { background: #2a1a1a; border: 1px solid #4a2222; color: #cc7777; }
+    .alert-info  { background: #1a1a2a; border: 1px solid #2a2a4a; color: #8888bb; }
+
+    #screen-success { text-align: center; padding: 16px 0; }
+
+    .hi-there {
+      font-size: 32px;
+      font-weight: 600;
+      color: #eee;
+      margin-bottom: 8px;
+    }
+    .welcome-sub { font-size: 14px; color: #666; }
+
+    .btn-logout {
+      margin-top: 28px;
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      color: #666;
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      width: 100%;
+      transition: all 0.15s;
+    }
+    .btn-logout:hover { border-color: #555; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="card">
+    <div class="brand">AuthApp</div>
+
+    <div id="screen-login" class="screen active">
+      <h1>Sign in</h1>
+      <p class="subtitle">Enter your credentials to continue</p>
+
+      <div id="login-alert" class="alert"></div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="login-identifier">Username or Email</label>
+          <input id="login-identifier" type="text" placeholder="username or email" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input id="login-password" type="password" placeholder="password" autocomplete="current-password" required />
+        </div>
+        <button id="login-btn" class="btn btn-primary" type="submit">
+          Sign In
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="link-text">
+        No account? <button onclick="showScreen('screen-signup')">Sign up</button>
+      </div>
+    </div>
+
+    <div id="screen-signup" class="screen">
+      <h1>Sign up</h1>
+      <p class="subtitle">Create a new account</p>
+
+      <div id="signup-alert" class="alert"></div>
+
+      <form id="signup-form" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label for="signup-username">Username</label>
+          <input id="signup-username" type="text" placeholder="username" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="signup-email">Email</label>
+          <input id="signup-email" type="email" placeholder="email" autocomplete="email" required />
+        </div>
+        <div class="form-group">
+          <label for="signup-password">Password</label>
+          <input id="signup-password" type="password" placeholder="password" autocomplete="new-password" required />
+        </div>
+        <button id="signup-btn" class="btn btn-primary" type="submit">
+          Create Account
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="link-text">
+        Have an account? <button onclick="showScreen('screen-login')">Sign in</button>
+      </div>
+    </div>
+
+    <div id="screen-success" class="screen">
+      <p class="hi-there">Hi there</p>
+      <p class="welcome-sub">You are logged in.</p>
+      <button class="btn-logout" onclick="handleLogout()">Sign out</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+	const API = 'http://localhost:8080/api/auth';
+
+	function showScreen(id) {
+		document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+		document.getElementById(id).classList.add('active');
+		clearAlerts();
+	}
+
+	function showAlert(id, message, type = 'error') {
+		const el = document.getElementById(id);
+		el.textContent = message;
+		el.className = `alert alert-${type} show`;
+	}
+
+	function clearAlerts() {
+		document.querySelectorAll('.alert').forEach(el => {
+		el.className = 'alert';
+		el.textContent = '';
+		});
+	}
+
+	function setLoading(btnId, loading) {
+		const btn = document.getElementById(btnId);
+		btn.disabled = loading;
+		btn.classList.toggle('loading', loading);
+	}
+
+	async function handleLogin(e) {
+		e.preventDefault();
+		const identifier = document.getElementById('login-identifier').value.trim();
+		const password   = document.getElementById('login-password').value;
+
+		setLoading('login-btn', true);
+		try {
+		const res = await fetch(`${API}/login`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ identifier, password })
+		});
+		const data = await res.json();
+
+		console.log(data);
+
+		if (res.ok && data.success) {
+			showScreen('screen-success');
+		} else if (res.status === 404) {
+			
+			showAlert('login-alert', 'No account found. Redirecting to sign up...', 'info');
+			setTimeout(() => showScreen('screen-signup'), 1500);
+		} else if (res.status === 401) {
+			showAlert('login-alert', 'Incorrect password.');
+		} else {
+			showAlert('login-alert', 'Something went wrong.');
+		}
+		} catch {
+			showAlert('login-alert', 'Cannot reach server. Is the backend running?');
+		} finally {
+			setLoading('login-btn', false);
+		}
+	}
+
+	async function handleSignup(e) {
+		e.preventDefault();
+		const username = document.getElementById('signup-username').value.trim();
+		const email    = document.getElementById('signup-email').value.trim();
+		const password = document.getElementById('signup-password').value;
+
+		setLoading('signup-btn', true);
+		try {
+		const res = await fetch(`${API}/signup`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ username, email, password })
+		});
+		const data = await res.json();
+
+		console.log(data);
+
+		if (res.ok && data.success) {
+			showAlert('signup-alert', 'Account created. Redirecting to sign in...', 'info');
+			setTimeout(() => {
+			showScreen('screen-login');
+			document.getElementById('login-identifier').value = username;
+			}, 1400);
+		} else if (res.status === 409) {
+			showAlert('signup-alert', 'Username or email already exists.');
+		} else {
+			showAlert('signup-alert', 'Something went wrong.');
+		}
+		} catch {
+			showAlert('signup-alert', 'Cannot reach server. Is the backend running?');
+		} finally {
+			setLoading('signup-btn', false);
+		}
+	}
+
+	function handleLogout() {
+		showScreen('screen-login');
+		document.getElementById('login-form').reset();
+		document.getElementById('signup-form').reset();
+	}
+</script>
+
+</body>
+</html>
