@@ -1,10 +1,13 @@
 package com.example.myProject.exception;
 
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 import java.util.Collections;
 import java.util.Map;
 
+
+@Getter
 public class ApiException extends RuntimeException {
     private final HttpStatus status;
     private final Map<String, String> errors;
@@ -19,11 +22,4 @@ public class ApiException extends RuntimeException {
         this.errors = errors != null ? errors : Collections.emptyMap();
     }
 
-    public HttpStatus getStatus() {
-        return status;
-    }
-
-    public Map<String, String> getErrors() {
-        return errors;
-    }
 }
