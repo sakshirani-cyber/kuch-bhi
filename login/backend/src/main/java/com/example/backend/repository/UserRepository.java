@@ -13,7 +13,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByUsernameOrEmail(String username, String email);
+    @org.springframework.data.jpa.repository.Query("SELECT u FROM User u WHERE u.username = :identifier OR u.email = :identifier")
+    Optional<User> findByIdentifier(@org.springframework.data.repository.query.Param("identifier") String identifier);
 
     boolean existsByUsername(String username);
 

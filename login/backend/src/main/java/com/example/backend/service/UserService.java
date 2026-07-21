@@ -1,69 +1,108 @@
 package com.example.backend.service;
 
+import com.example.backend.dto.AuthResponse;
+import com.example.backend.dto.LoginRequest;
+import com.example.backend.dto.SignupRequest;
+import com.example.backend.dto.UpdateProfileRequest;
+import com.example.backend.dto.UserDto;
+import com.example.backend.exception.InvalidCredentialsException;
+import com.example.backend.exception.ResourceNotFoundException;
+import com.example.backend.exception.UserAlreadyExistsException;
 import com.example.backend.model.User;
 import com.example.backend.repository.UserRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class UserService {
 
-    private UserRepository repo;
+	private final UserRepository userRepository;
 
-	public UserService(UserRepository repo) {
-		this.repo = repo;
+	public UserService(UserRepository userRepository) {
+		this.userRepository = userRepository;
 	}
-    public User login(String identifier, String password) {
-        Optional<User> userOpt = repo.findByUsernameOrEmail(identifier, identifier);
 
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("USER_NOT_FOUND");
-        }
+	public AuthResponse login(LoginRequest request) {
+		log.info("Attempting login for identifier: {}", request.getIdentifier());
+		Optional<User> userOpt = userRepository.findByIdentifier(request.getIdentifier());
 
-        if (!userOpt.get().getPassword().equals(password)) {
-            throw new IllegalArgumentException("INVALID_PASSWORD");
-        }
+		if (userOpt.isEmpty()) {
+			log.error("User not found with identifier: {}", request.getIdentifier());
+			throw new ResourceNotFoundException("USER_NOT_FOUND");
+		}
 
-        return userOpt.get();
-    }
+		User user = userOpt.get();
+		if (!user.getPassword().equals(request.getPassword())) {
+			log.error("Invalid password for identifier: {}", request.getIdentifier());
+			throw new InvalidCredentialsException("INVALID_PASSWORD");
+		}
 
-    public User signup(String username, String firstName, String lastName, String email, String gender, String password, String contactNumber, LocalDate dob, String address, String collegeName, String schoolName, String currentcompany) {
-        if (repo.existsByUsername(username)) {
-            throw new IllegalStateException("Username already exists");
-        }
-        if (repo.existsByEmail(email)) {
-            throw new IllegalStateException("Email already exists");
-        }
+		log.info("Login successful for user: {}", user.getUsername());
+		return new AuthResponse(true, "Hi there", new UserDto(user));
+	}
 
-        return repo.save(new User(username, firstName, lastName, email, gender, password, contactNumber, dob, address, collegeName, schoolName, currentcompany));
-    }
+	public AuthResponse signup(SignupRequest request) {
+		log.info("Attempting signup for username: {} and email: {}", request.getUsername(), request.getEmail());
+		if (userRepository.existsByUsername(request.getUsername())) {
+			log.error("Username already exists: {}", request.getUsername());
+			throw new UserAlreadyExistsException("Username already exists");
+		}
+		if (userRepository.existsByEmail(request.getEmail())) {
+			log.error("Email already exists: {}", request.getEmail());
+			throw new UserAlreadyExistsException("Email already exists");
+		}
 
-    public User updateProfile(String identifier, String firstName, String lastName, String gender, String password, String contactNumber, LocalDate dob, String address, String collegeName, String schoolName, String currentcompany) {
-        Optional<User> userOpt = repo.findByUsernameOrEmail(identifier, identifier);
+		User user = new User(
+				request.getUsername(),
+				request.getFirstName(),
+				request.getLastName(),
+				request.getEmail(),
+				request.getGender(),
+				request.getPassword(),
+				request.getContactNumber(),
+				request.getDob(),
+				request.getAddress(),
+				request.getCollegeName(),
+				request.getSchoolName(),
+				request.getCurrentCompany());
 
-        if (userOpt.isEmpty()) {
-            throw new IllegalArgumentException("USER_NOT_FOUND");
-        }
+		User savedUser = userRepository.save(user);
+		log.info("Signup successful for user: {}", savedUser.getUsername());
+		return new AuthResponse(true, "Account created successfully", new UserDto(savedUser));
+	}
 
-        User user = userOpt.get();
+	public AuthResponse updateProfile(UpdateProfileRequest request) {
+		log.info("Attempting profile update for identifier: {}", request.getIdentifier());
+		Optional<User> userOpt = userRepository.findByIdentifier(request.getIdentifier());
 
-        if (!user.getPassword().equals(password)) {
-            throw new IllegalArgumentException("INVALID_PASSWORD");
-        }
+		if (userOpt.isEmpty()) {
+			log.error("User not found with identifier: {}", request.getIdentifier());
+			throw new ResourceNotFoundException("USER_NOT_FOUND");
+		}
 
-		// auto generated getter and setters
-		user.setFirstName(firstName);
-		user.setLastName(lastName);
-		user.setGender(gender);
-        user.setContactNumber(contactNumber);
-        user.setDob(dob);
-        user.setAddress(address);
-        user.setCollegeName(collegeName);
-        user.setSchoolName(schoolName);
-        user.setCurrentcompany(currentcompany);
+		User user = userOpt.get();
 
-        return repo.save(user);
-    }
+		if (!user.getPassword().equals(request.getPassword())) {
+			log.error("Invalid password provided during profile update for identifier: {}", request.getIdentifier());
+			throw new InvalidCredentialsException("INVALID_PASSWORD");
+		}
+
+		user.setFirstName(request.getFirstName());
+		user.setLastName(request.getLastName());
+		user.setGender(request.getGender());
+		user.setContactNumber(request.getContactNumber());
+		user.setDob(request.getDob());
+		user.setAddress(request.getAddress());
+		user.setCollegeName(request.getCollegeName());
+		user.setSchoolName(request.getSchoolName());
+		user.setCurrentCompany(request.getCurrentCompany());
+
+		User updatedUser = userRepository.save(user);
+		log.info("Profile update successful for user: {}", updatedUser.getUsername());
+
+		return new AuthResponse(true, "Profile updated successfully", new UserDto(updatedUser));
+	}
 }
