@@ -8,8 +8,6 @@ import lombok.*;
 
 import java.time.LocalDate;
 
-//Used Jakarta Validation Library
-
 @Getter
 @Setter
 @NoArgsConstructor

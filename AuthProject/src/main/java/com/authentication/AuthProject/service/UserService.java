@@ -78,7 +78,6 @@ public class UserService {
             throw new BadRequestException(
                     "New password must be different from current password.");
         }
-        //use sql query for updation
 
         user.setPassword(request.getNewPassword());
     }

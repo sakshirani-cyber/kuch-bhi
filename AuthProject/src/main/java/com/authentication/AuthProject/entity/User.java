@@ -50,8 +50,6 @@ public class User {
     @Column(nullable = false)
     private Instant updatedAt;
 
-    //Instant(utc) vs localdatetime
-
     @PrePersist
     public void prePersist() {
         Instant now = Instant.now();
