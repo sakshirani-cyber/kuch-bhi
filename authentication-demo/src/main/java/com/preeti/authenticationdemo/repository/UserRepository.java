@@ -8,9 +8,6 @@ import java.util.Optional;
 
 public interface UserRepository extends MongoRepository<User, String> {
 
-    // Written manually with @Query instead of relying on Spring Data's
-    // method-name-derived query generation (e.g. findByUsername(...)).
-
     @Query("{ 'username' : ?0 }")
     Optional<User> findByUsernameManual(String username);
 

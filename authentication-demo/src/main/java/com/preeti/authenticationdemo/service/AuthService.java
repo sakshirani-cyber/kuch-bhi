@@ -49,7 +49,7 @@ public class AuthService {
                 request.getDateOfBirth()
         );
 
-        // Explicit insert via MongoTemplate instead of repository.save(),
+        // Instead of repository.save(), used .insert()
         // so it's clear this always creates a brand-new document.
         mongoTemplate.insert(newUser);
 
