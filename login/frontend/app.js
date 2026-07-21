@@ -85,14 +85,14 @@ async function handleSignup(e) {
     const address = document.getElementById('signup-address').value.trim();
     const collegeName = document.getElementById('signup-college').value.trim();
     const schoolName = document.getElementById('signup-school').value.trim();
-    const currentcompany = document.getElementById('signup-company').value.trim();
+    const currentCompany = document.getElementById('signup-company').value.trim();
 
     setLoading('signup-btn', true);
     try {
         const res = await fetch(`${API}/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, firstName, lastName, gender, email, password, contactNumber, dob, address, collegeName, schoolName, currentcompany })
+            body: JSON.stringify({ username, firstName, lastName, gender, email, password, contactNumber, dob, address, collegeName, schoolName, currentCompany })
         });
         const data = await res.json();
 		//console.log(data);
@@ -128,7 +128,7 @@ function populateDashboard() {
     document.getElementById('dash-address').textContent = currentUser.address || '-';
     document.getElementById('dash-college').textContent = currentUser.collegeName || '-';
     document.getElementById('dash-school').textContent = currentUser.schoolName || '-';
-    document.getElementById('dash-company').textContent = currentUser.currentcompany || '-';
+    document.getElementById('dash-company').textContent = currentUser.currentCompany || '-';
 }
 
 function handleLogout() {
@@ -170,7 +170,7 @@ function proceedToEditProfile() {
     document.getElementById('edit-address').value = currentUser.address || '';
     document.getElementById('edit-college').value = currentUser.collegeName || '';
     document.getElementById('edit-school').value = currentUser.schoolName || '';
-    document.getElementById('edit-company').value = currentUser.currentcompany || '';
+    document.getElementById('edit-company').value = currentUser.currentCompany || '';
     
     showScreen('screen-edit-profile');
 }
@@ -186,18 +186,18 @@ async function handleUpdateProfile(e) {
     const address = document.getElementById('edit-address').value.trim();
     const collegeName = document.getElementById('edit-college').value.trim();
     const schoolName = document.getElementById('edit-school').value.trim();
-    const currentcompany = document.getElementById('edit-company').value.trim();
+    const currentCompany = document.getElementById('edit-company').value.trim();
     
     setLoading('edit-save-btn', true);
     
     try {
         const res = await fetch(`${API}/update-profile`, {
-            method: 'POST',
+            method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 identifier: currentUser.username, 
                 password: window.tempPassword,
-                firstName, lastName, gender, contactNumber, dob, address, collegeName, schoolName, currentcompany 
+                firstName, lastName, gender, contactNumber, dob, address, collegeName, schoolName, currentCompany 
             })
         });
         
@@ -209,7 +209,8 @@ async function handleUpdateProfile(e) {
             showScreen('screen-dashboard');
             window.tempPassword = null;
         } else {
-            showAlert('edit-alert', data.message || 'Failed to update profile.');
+            const errorMsg = data.errors ? Object.values(data.errors).join(' | ') : (data.message || 'Failed to update profile.');
+            showAlert('edit-alert', errorMsg);
             if (res.status === 401) {
                 // Password was wrong
                 setTimeout(() => {
