@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Update Username</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<nav>
+
+    <h2>User Dashboard</h2>
+
+    <ul>
+
+        <li><a href="dashboard.html">Dashboard</a></li>
+
+        <li><a href="update-password.html">Update Password</a></li>
+
+        <li><a href="#" onclick="logout()">Logout</a></li>
+
+    </ul>
+
+</nav>
+
+<div class="container">
+
+    <div class="card">
+
+        <h2>Update Username</h2>
+
+        <div id="message"></div>
+
+        <form id="usernameForm">
+
+            <div class="form-group">
+
+                <label>New Username</label>
+
+                <input
+                    type="text"
+                    id="username"
+                    placeholder="Enter New Username"
+                    required>
+
+            </div>
+
+            <button id="updateBtn">
+
+                Update Username
+
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/update-username.js"></script>
+
+</body>
+
+</html>
