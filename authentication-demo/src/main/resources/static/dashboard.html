@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f4f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  }
+  .card {
+    background: #fff;
+    width: 360px;
+    padding: 32px 28px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+    color: #1a1a1a;
+  }
+  .welcome {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+  .welcome span { font-weight: 600; color: #2563eb; }
+  label {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .field { margin-bottom: 14px; }
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #dcdfe4;
+    border-radius: 8px;
+    font-size: 14px;
+  }
+  input:focus { outline: none; border-color: #2563eb; }
+  .divider {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 20px 0;
+  }
+  button {
+    width: 100%;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .save {
+    background: #2563eb;
+    color: #fff;
+    margin-top: 4px;
+  }
+  .save:hover { background: #1d4ed8; }
+  .logout {
+    background: #f1f2f4;
+    color: #444;
+    margin-top: 10px;
+  }
+  .logout:hover { background: #e5e7eb; }
+  .msg {
+    margin-top: 14px;
+    font-size: 13px;
+    text-align: center;
+    min-height: 16px;
+  }
+  .msg.error { color: #dc2626; }
+  .msg.success { color: #16a34a; }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>Edit Profile</h1>
+  <div class="welcome">Logged in as <span id="currentUsername"></span></div>
+
+  <form id="updateForm">
+    <div class="field">
+      <label>Current Password (required to save changes)</label>
+      <input type="password" id="currentPassword" required>
+    </div>
+
+    <hr class="divider">
+
+    <div class="field">
+      <label>New Username (leave blank to keep current)</label>
+      <input type="text" id="newUsername" placeholder="New username">
+    </div>
+
+    <div class="field">
+      <label>New Password (leave blank to keep current)</label>
+      <input type="password" id="newPassword" placeholder="New password">
+    </div>
+
+    <button type="submit" class="save">Save Changes</button>
+  </form>
+
+  <button class="logout" id="logoutBtn">Log Out</button>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script>
+  const username = sessionStorage.getItem('username');
+  if (!username) {
+    window.location.href = 'index.html';
+  }
+  document.getElementById('currentUsername').textContent = username;
+
+  const msg = document.getElementById('msg');
+  function showMsg(text, isError) {
+    msg.textContent = text;
+    msg.className = 'msg ' + (isError ? 'error' : 'success');
+  }
+
+  document.getElementById('logoutBtn').addEventListener('click', () => {
+    sessionStorage.removeItem('username');
+    window.location.href = 'index.html';
+  });
+
+  document.getElementById('updateForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const currentUsername = sessionStorage.getItem('username');
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newUsername = document.getElementById('newUsername').value.trim();
+    const newPassword = document.getElementById('newPassword').value;
+
+    const res = await fetch('/api/v1/auth/update', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        currentUsername,
+        currentPassword,
+        newUsername: newUsername || null,
+        newPassword: newPassword || null
+      })
+    });
+
+    const text = await res.text();
+
+    if (res.ok) {
+      showMsg(text, false);
+      if (newUsername) {
+        sessionStorage.setItem('username', newUsername);
+        document.getElementById('currentUsername').textContent = newUsername;
+      }
+      document.getElementById('currentPassword').value = '';
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newPassword').value = '';
+    } else {
+      showMsg(text || 'Update failed', true);
+    }
+  });
+</script>
+
+</body>
+</html>

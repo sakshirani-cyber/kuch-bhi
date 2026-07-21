@@ -2,7 +2,6 @@ package com.preeti.authenticationdemo.controller;
 
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.SignupRequest;
-import com.preeti.authenticationdemo.dto.UpdateRequest;
 import com.preeti.authenticationdemo.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -19,17 +18,8 @@ public class AuthController {
 
     @PostMapping("/signup")
     public String signup(@Valid @RequestBody SignupRequest request) {
+
         return authService.signup(request);
-    }
-
-    @PostMapping("/login")
-    public String login(@Valid @RequestBody LoginRequest request) {
-        return authService.login(request);
-    }
-
-    @PutMapping("/update")
-    public String update(@Valid @RequestBody UpdateRequest request) {
-        return authService.updateCredentials(request);
     }
 
 }
