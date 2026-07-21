@@ -49,8 +49,6 @@ public class AuthService {
                 request.getDateOfBirth()
         );
 
-        // Instead of repository.save(), used .insert()
-        // so it's clear this always creates a brand-new document.
         mongoTemplate.insert(newUser);
 
         return "User registered successfully. Age on record: " + newUser.getAge();
@@ -83,8 +81,6 @@ public class AuthService {
 
         Query query = Query.query(Criteria.where("username").is(currentUser.getUsername()));
 
-        // Explicit partial update via MongoTemplate instead of
-        // fetch -> mutate object -> repository.save().
         mongoTemplate.updateFirst(query, update, User.class);
 
         return "Profile updated successfully";
