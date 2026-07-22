@@ -1,6 +1,8 @@
 package com.example.myProject.controller;
 
 import com.example.myProject.exception.ApiException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,9 +16,12 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<Map<String, Object>> handleApiException(ApiException ex) {
+        log.warn("ApiException status={} message={} errors={}",
+                ex.getStatus().value(), ex.getMessage(), ex.getErrors());
         Map<String, Object> body = new HashMap<>();
         body.put("status", ex.getStatus().value());
         body.put("message", ex.getMessage());
@@ -31,6 +36,7 @@ public class GlobalExceptionHandler {
             fieldErrors.put(error.getField(), error.getDefaultMessage());
         }
 
+        log.warn("Validation failed errors={}", fieldErrors);
         Map<String, Object> body = new HashMap<>();
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("message", "Validation failed");
@@ -40,6 +46,8 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<Map<String, Object>> handleStatus(ResponseStatusException ex) {
+        log.warn("ResponseStatusException status={} reason={}",
+                ex.getStatusCode().value(), ex.getReason());
         Map<String, Object> body = new HashMap<>();
         body.put("status", ex.getStatusCode().value());
         body.put("message", ex.getReason() != null ? ex.getReason() : "Request failed");
