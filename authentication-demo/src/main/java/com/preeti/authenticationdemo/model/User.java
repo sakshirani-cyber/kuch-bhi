@@ -30,11 +30,6 @@ public class User {
 
     private LocalDate dateOfBirth;
 
-    /**
-     * Age is intentionally NOT stored in the database.
-     * It is derived on demand from dateOfBirth, so it is
-     * always accurate and never goes stale.
-     */
     public int getAge() {
         if (dateOfBirth == null) {
             return 0;

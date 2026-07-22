@@ -45,3 +45,14 @@ public class SignupRequest {
     private LocalDate dateOfBirth;
 
 }
+
+//Separate APIs for everything
+//Make combinations and no need for UserNotFound simply make Username, Password @notblank
+//Add annotation for id
+//Common RegEx for all fields
+//Some can make the email by simply typing space so thats a production bug
+//Username ko use as Global Exception Handler
+//Validations most important
+//How you are getting your data saved
+//Make frontend consistent with backend
+//Make UI better

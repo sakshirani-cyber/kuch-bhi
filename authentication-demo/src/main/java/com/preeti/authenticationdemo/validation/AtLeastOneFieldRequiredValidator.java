@@ -10,7 +10,7 @@ public class AtLeastOneFieldRequiredValidator implements ConstraintValidator<AtL
     public boolean isValid(UpdateRequest request, ConstraintValidatorContext context) {
 
         if (request == null) {
-            return true; // let @NotNull elsewhere handle a fully-missing request
+            return true;
         }
 
         return isPresent(request.getNewUsername())

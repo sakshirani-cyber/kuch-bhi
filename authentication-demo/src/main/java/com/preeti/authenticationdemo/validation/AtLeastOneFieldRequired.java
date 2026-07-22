@@ -8,12 +8,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/**
- * Class-level constraint for UpdateRequest: at least one of
- * newUsername / newPassword / newEmail / newPhoneNumber must be
- * provided. Prevents a "verify password only" submission from
- * reaching the database as an empty update.
- */
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Constraint(validatedBy = AtLeastOneFieldRequiredValidator.class)

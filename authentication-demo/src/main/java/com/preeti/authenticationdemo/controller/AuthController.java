@@ -38,8 +38,6 @@ public class AuthController {
         } catch (UserAlreadyExistsException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
         } catch (Exception exception) {
-            // Not a known business-rule failure (those are handled above) —
-            // this is unexpected, so log the full stack trace for debugging.
             logger.error("Unexpected error during signup", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong during signup. Please try again.");

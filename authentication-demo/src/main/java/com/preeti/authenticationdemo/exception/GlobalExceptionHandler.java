@@ -11,11 +11,6 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/**
- * Catches @Valid failures (e.g. blank username, weak password) from every
- * controller and turns them into a simple field -> message map, so the
- * frontend can show the exact validation message defined on each annotation.
- */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -28,9 +23,6 @@ public class GlobalExceptionHandler {
             fieldErrors.put(fieldError.getField(), fieldError.getDefaultMessage());
         }
 
-        // Class-level constraints (like @AtLeastOneFieldRequired) attach to
-        // the whole object, not a single field, so they show up here instead
-        // of in getFieldErrors() above.
         for (ObjectError globalError : exception.getBindingResult().getGlobalErrors()) {
             fieldErrors.put("request", globalError.getDefaultMessage());
         }
