@@ -10,6 +10,11 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * Catches @Valid failures (e.g. blank username, weak password) from every
+ * controller and turns them into a simple field -> message map, so the
+ * frontend can show the exact validation message defined on each annotation.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

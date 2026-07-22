@@ -8,6 +8,8 @@ import com.preeti.authenticationdemo.exception.UserAlreadyExistsException;
 import com.preeti.authenticationdemo.exception.UserNotFoundException;
 import com.preeti.authenticationdemo.service.AuthService;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
+
+    private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService authService;
 
@@ -34,6 +38,9 @@ public class AuthController {
         } catch (UserAlreadyExistsException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
         } catch (Exception exception) {
+            // Not a known business-rule failure (those are handled above) —
+            // this is unexpected, so log the full stack trace for debugging.
+            logger.error("Unexpected error during signup", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong during signup. Please try again.");
         }
@@ -47,6 +54,7 @@ public class AuthController {
         } catch (UserNotFoundException | InvalidCredentialsException exception) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(exception.getMessage());
         } catch (Exception exception) {
+            logger.error("Unexpected error during login", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong during login. Please try again.");
         }
@@ -62,6 +70,7 @@ public class AuthController {
         } catch (UserAlreadyExistsException exception) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(exception.getMessage());
         } catch (Exception exception) {
+            logger.error("Unexpected error during profile update", exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Something went wrong while updating your profile. Please try again.");
         }

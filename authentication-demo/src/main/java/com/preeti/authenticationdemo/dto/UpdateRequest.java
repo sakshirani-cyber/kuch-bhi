@@ -20,6 +20,10 @@ public class UpdateRequest {
     @NotBlank(message = "Current password is required")
     private String currentPassword;
 
+    // All fields below are optional: leave blank/null to keep the existing value.
+    // Bean Validation constraints below (Pattern, Email) are skipped automatically
+    // when the value is null, so they only fire if the user actually provides one.
+
     @Pattern(regexp = "^[a-zA-Z0-9._]{3,20}$", message = "New username must be 3-20 characters (letters, numbers, dots, underscores only)")
     private String newUsername;
 
