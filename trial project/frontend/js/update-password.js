@@ -7,8 +7,14 @@ if (!userId) {
     window.location.href = "login.html";
 }
 
+const refreshSubmitState = bindRequiredSubmit(form, button, ["password"]);
+
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
+
+    if (button.disabled) {
+        return;
+    }
 
     message.innerHTML = "";
     button.disabled = true;
@@ -26,8 +32,7 @@ form.addEventListener("submit", async function (e) {
         }, 1200);
     } catch (error) {
         message.innerHTML = formatApiError(error);
+        button.innerHTML = "Update Password";
+        refreshSubmitState();
     }
-
-    button.disabled = false;
-    button.innerHTML = "Update Password";
 });

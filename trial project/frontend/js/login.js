@@ -1,9 +1,14 @@
 const form = document.getElementById("loginForm");
 const message = document.getElementById("message");
 const button = document.getElementById("loginBtn");
+const refreshSubmitState = bindRequiredSubmit(form, button, ["email", "password"]);
 
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
+
+    if (button.disabled) {
+        return;
+    }
 
     message.innerHTML = "";
     button.disabled = true;
@@ -22,8 +27,7 @@ form.addEventListener("submit", async function (e) {
         window.location.href = "dashboard.html";
     } catch (error) {
         message.innerHTML = formatApiError(error);
+        button.innerHTML = "Login";
+        refreshSubmitState();
     }
-
-    button.disabled = false;
-    button.innerHTML = "Login";
 });

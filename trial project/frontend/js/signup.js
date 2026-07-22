@@ -1,9 +1,18 @@
 const form = document.getElementById("signupForm");
 const message = document.getElementById("message");
 const button = document.getElementById("signupBtn");
+const refreshSubmitState = bindRequiredSubmit(
+    form,
+    button,
+    ["username", "email", "contactNumber", "dateOfBirth", "password"]
+);
 
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
+
+    if (button.disabled) {
+        return;
+    }
 
     message.innerHTML = "";
     button.disabled = true;
@@ -31,8 +40,7 @@ form.addEventListener("submit", async function (e) {
         }, 1500);
     } catch (error) {
         message.innerHTML = formatApiError(error);
+        button.innerHTML = "Create Account";
+        refreshSubmitState();
     }
-
-    button.disabled = false;
-    button.innerHTML = "Create Account";
 });

@@ -109,3 +109,25 @@ function logout() {
     localStorage.removeItem("userId");
     window.location.href = "login.html";
 }
+
+function bindRequiredSubmit(form, button, fieldIds) {
+    function refreshSubmitState() {
+        const allFilled = fieldIds.every((id) => {
+            const field = document.getElementById(id);
+            return field && field.value.trim() !== "";
+        });
+        button.disabled = !allFilled;
+    }
+
+    fieldIds.forEach((id) => {
+        const field = document.getElementById(id);
+        if (!field) {
+            return;
+        }
+        field.addEventListener("input", refreshSubmitState);
+        field.addEventListener("change", refreshSubmitState);
+    });
+
+    refreshSubmitState();
+    return refreshSubmitState;
+}
