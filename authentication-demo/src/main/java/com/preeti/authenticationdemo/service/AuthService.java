@@ -95,6 +95,17 @@ public class AuthService {
 
         Update update = buildUpdateFromRequest(request, currentUser);
 
+        // IMPORTANT: MongoDB treats an update document with no operators
+        // (no $set at all) as a full REPLACEMENT of the matched document,
+        // not a "do nothing" no-op. If none of the optional fields were
+        // actually filled in, calling updateFirst() here would wipe out
+        // the user's existing username/password/email/phone. So if there's
+        // truly nothing to change, we skip the database call entirely.
+        if (update.getUpdateObject().isEmpty()) {
+            logger.info("No changes submitted for username '{}'; nothing to update", request.getCurrentUsername());
+            return "Password verified. No new details were provided, so nothing was changed.";
+        }
+
         Query query = Query.query(Criteria.where("username").is(currentUser.getUsername()));
 
         mongoTemplate.updateFirst(query, update, User.class);

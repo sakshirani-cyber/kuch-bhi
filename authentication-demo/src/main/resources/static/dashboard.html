@@ -153,8 +153,15 @@
     msg.className = 'msg ' + (isError ? 'error' : 'success');
   }
 
+  function hasAtLeastOneNewField() {
+    return document.getElementById('newUsername').value.trim() !== ''
+        || document.getElementById('newPassword').value !== ''
+        || document.getElementById('newEmail').value.trim() !== ''
+        || document.getElementById('newPhoneNumber').value.trim() !== '';
+  }
+
   updateForm.addEventListener('input', () => {
-    saveBtn.disabled = !updateForm.checkValidity();
+    saveBtn.disabled = !(updateForm.checkValidity() && hasAtLeastOneNewField());
   });
 
   document.getElementById('logoutBtn').addEventListener('click', () => {

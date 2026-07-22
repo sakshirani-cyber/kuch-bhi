@@ -7,11 +7,13 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.preeti.authenticationdemo.validation.AtLeastOneFieldRequired;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@AtLeastOneFieldRequired
 public class UpdateRequest {
 
     @NotBlank(message = "Current username is required")
