@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auth Demo</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="card">
+  <h1>Welcome</h1>
+
+  <div class="tabs">
+    <div class="tab active" id="tabLogin">Login</div>
+    <div class="tab" id="tabSignup">Sign Up</div>
+  </div>
+
+  <form id="loginForm" class="active" novalidate>
+    <div class="field-group">
+      <label for="loginUsername">Username</label>
+      <input type="text" id="loginUsername" required>
+    </div>
+    <div class="field-group">
+      <label for="loginPassword">Password</label>
+      <input type="password" id="loginPassword" required>
+    </div>
+    <button type="submit" id="loginSubmit" disabled>Log In</button>
+  </form>
+
+  <form id="signupForm" novalidate>
+    <div class="field-group">
+      <label for="signupUsername">Username</label>
+      <input type="text" id="signupUsername" minlength="3" maxlength="20" required>
+    </div>
+    <div class="field-group">
+      <label for="signupPassword">Password</label>
+      <input type="password" id="signupPassword"
+             pattern="^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&amp;+=!]).{8,13}$"
+             required>
+      <p class="hint">8-13 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special (@#$%^&amp;+=!)</p>
+    </div>
+    <div class="field-group">
+      <label for="signupEmail">Email</label>
+      <input type="email" id="signupEmail" required>
+    </div>
+    <div class="field-group">
+      <label for="signupPhone">Phone Number</label>
+      <input type="text" id="signupPhone" pattern="^[0-9]{10}$" maxlength="10" required>
+      <p class="hint">10 digits, no spaces or dashes</p>
+    </div>
+    <div class="field-group">
+      <label for="signupDob">Date of Birth</label>
+      <input type="date" id="signupDob" required>
+    </div>
+    <button type="submit" id="signupSubmit" disabled>Sign Up</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/index.js"></script>
+</body>
+</html>

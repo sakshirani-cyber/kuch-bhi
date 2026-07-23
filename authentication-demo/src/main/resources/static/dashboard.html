@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div class="card">
+  <h1>Edit Profile</h1>
+  <div class="welcome">Logged in as <span id="currentUsernameLabel"></span></div>
+
+  <div class="field-group">
+    <label for="currentPassword">Current Password (required for every change below)</label>
+    <input type="password" id="currentPassword" required>
+  </div>
+
+  <hr class="divider">
+
+  <p class="section-title">Username</p>
+  <div class="update-row">
+    <div class="field-group">
+      <input type="text" id="newUsername" placeholder="New username"
+             minlength="3" maxlength="20" pattern="^[a-zA-Z0-9._]{3,20}$">
+    </div>
+    <button type="button" id="updateUsernameBtn" disabled>Update</button>
+  </div>
+
+  <p class="section-title">Password</p>
+  <div class="update-row">
+    <div class="field-group">
+      <input type="password" id="newPassword" placeholder="New password"
+             pattern="^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[@#$%^&amp;+=!]).{8,13}$">
+    </div>
+    <button type="button" id="updatePasswordBtn" disabled>Update</button>
+  </div>
+  <p class="hint">8-13 chars, 1 uppercase, 1 lowercase, 1 digit, 1 special (@#$%^&amp;+=!)</p>
+
+  <p class="section-title">Email</p>
+  <div class="update-row">
+    <div class="field-group">
+      <input type="email" id="newEmail" placeholder="New email">
+    </div>
+    <button type="button" id="updateEmailBtn" disabled>Update</button>
+  </div>
+
+  <p class="section-title">Phone Number</p>
+  <div class="update-row">
+    <div class="field-group">
+      <input type="text" id="newPhoneNumber" placeholder="New phone number"
+             pattern="^[0-9]{10}$" maxlength="10">
+    </div>
+    <button type="button" id="updatePhoneBtn" disabled>Update</button>
+  </div>
+
+  <button class="logout" id="logoutBtn">Log Out</button>
+
+  <div class="danger-zone">
+    <p>Deleting your account is permanent and cannot be undone.</p>
+    <button class="danger" id="deleteBtn" disabled>Delete My Account</button>
+  </div>
+
+  <div class="msg" id="msg"></div>
+</div>
+
+<script src="js/common.js"></script>
+<script src="js/dashboard.js"></script>
+</body>
+</html>
