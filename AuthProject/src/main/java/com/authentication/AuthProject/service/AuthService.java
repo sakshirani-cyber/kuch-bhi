@@ -2,8 +2,7 @@ package com.authentication.AuthProject.service;
 
 import com.authentication.AuthProject.dto.request.LoginRequest;
 import com.authentication.AuthProject.dto.request.SignupRequest;
-import com.authentication.AuthProject.dto.response.LoginResponse;
-import com.authentication.AuthProject.dto.response.SignupResponse;
+import com.authentication.AuthProject.dto.response.AuthResponse;
 import com.authentication.AuthProject.entity.User;
 import com.authentication.AuthProject.exception.DuplicateResourceException;
 import com.authentication.AuthProject.exception.InvalidCredentialsException;
@@ -11,15 +10,13 @@ import com.authentication.AuthProject.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @RequiredArgsConstructor
 @Service
 public class AuthService {
 
     private final UserRepository repository;
 
-    public SignupResponse signup(SignupRequest request) {
+    public AuthResponse signup(SignupRequest request) {
 
         if (repository.existsByEmail(request.getEmail())) {
             throw new DuplicateResourceException("Email already registered.");
@@ -41,13 +38,13 @@ public class AuthService {
 
         User savedUser = repository.save(user);
 
-        return SignupResponse.builder()
+        return AuthResponse.builder()
                 .userId(savedUser.getId())
                 .message("Signup Successful")
                 .build();
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
 
         User user = repository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
@@ -57,7 +54,7 @@ public class AuthService {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
-        return LoginResponse.builder()
+        return AuthResponse.builder()
                 .userId(user.getId())
                 .message("Login successful")
                 .build();

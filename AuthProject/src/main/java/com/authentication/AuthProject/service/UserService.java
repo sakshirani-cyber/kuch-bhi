@@ -46,8 +46,6 @@ public class UserService {
                     "Phone number already registered.");
         }
 
-        user.setPhoneNumber(newPhone);
-
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
         user.setDob(request.getDob());

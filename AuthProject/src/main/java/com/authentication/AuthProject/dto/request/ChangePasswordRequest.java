@@ -24,3 +24,48 @@ public class ChangePasswordRequest {
     private String confirmPassword;
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+    /*One thing Bean Validation cannot do
+
+    It can verify:
+
+     Password is not blank
+     Password length
+     Null values
+
+    But it cannot verify:
+
+    newPassword == confirmPassword
+
+    That is business logic, so it belongs in the service layer.
+
+
+    Request
+        │
+                ▼
+    Bean Validation
+        │
+                ▼
+    Service
+        │
+                ├── Current password correct?
+            │
+            ├── New != Current?
+            │
+            ├── New == Confirm?
+            │
+            ▼
+            Repository.save()
+            */
+

@@ -1,12 +1,14 @@
 package com.authentication.AuthProject.entity;
 
 
+import com.authentication.AuthProject.enums.Gender;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Period;
 
 @Entity
 @Table(name = "users")
@@ -44,21 +46,25 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @Column(nullable = false)
+    private Integer age;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
-    @Column(nullable = false)
     private Instant updatedAt;
+
 
     @PrePersist
     public void prePersist() {
         Instant now = Instant.now();
         createdAt = now;
-        updatedAt = now;
+        age = Period.between(dob, LocalDate.now()).getYears();
     }
 
     @PreUpdate
     public void preUpdate() {
         updatedAt = Instant.now();
+        age = Period.between(dob, LocalDate.now()).getYears();
     }
 }

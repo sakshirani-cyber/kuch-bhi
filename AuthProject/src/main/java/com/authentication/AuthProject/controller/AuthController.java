@@ -2,8 +2,7 @@ package com.authentication.AuthProject.controller;
 
 import com.authentication.AuthProject.dto.request.LoginRequest;
 import com.authentication.AuthProject.dto.request.SignupRequest;
-import com.authentication.AuthProject.dto.response.LoginResponse;
-import com.authentication.AuthProject.dto.response.SignupResponse;
+import com.authentication.AuthProject.dto.response.AuthResponse;
 import com.authentication.AuthProject.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -24,20 +23,20 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<SignupResponse> signup(
+    public ResponseEntity<AuthResponse> signup(
             @Valid @RequestBody SignupRequest request) {
 
-        SignupResponse response = service.signup(request);
+        AuthResponse response = service.signup(request);
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
+    public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request) {
 
-        LoginResponse response = service.login(request);
+        AuthResponse response = service.login(request);
 
         return ResponseEntity.ok(response);
     }

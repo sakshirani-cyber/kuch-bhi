@@ -1,6 +1,6 @@
 package com.authentication.AuthProject.dto.response;
 
-import com.authentication.AuthProject.entity.Gender;
+import com.authentication.AuthProject.enums.Gender;
 import lombok.*;
 
 import java.time.LocalDate;

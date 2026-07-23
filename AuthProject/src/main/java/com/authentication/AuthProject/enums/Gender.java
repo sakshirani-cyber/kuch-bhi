@@ -1,7 +1,9 @@
-package com.authentication.AuthProject.entity;
+package com.authentication.AuthProject.enums;
 
 public enum Gender {
     MALE,
     FEMALE,
     OTHER
 }
+
+
