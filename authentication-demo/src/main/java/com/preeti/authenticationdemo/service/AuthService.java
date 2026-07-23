@@ -1,8 +1,12 @@
 package com.preeti.authenticationdemo.service;
 
+import com.preeti.authenticationdemo.dto.DeleteUserRequest;
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.SignupRequest;
-import com.preeti.authenticationdemo.dto.UpdateRequest;
+import com.preeti.authenticationdemo.dto.UpdateEmailRequest;
+import com.preeti.authenticationdemo.dto.UpdatePasswordRequest;
+import com.preeti.authenticationdemo.dto.UpdatePhoneNumberRequest;
+import com.preeti.authenticationdemo.dto.UpdateUsernameRequest;
 import com.preeti.authenticationdemo.exception.InvalidCredentialsException;
 import com.preeti.authenticationdemo.exception.UserAlreadyExistsException;
 import com.preeti.authenticationdemo.exception.UserNotFoundException;
@@ -17,6 +21,8 @@ import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.Optional;
 
 @Service
@@ -38,21 +44,27 @@ public class AuthService {
 
     public String signup(SignupRequest request) {
 
-        logger.info("Signup attempt for username '{}'", request.getUsername());
+        String username = request.getUsername().trim();
+        String email = request.getEmail().trim();
+        String phoneNumber = request.getPhoneNumber().trim();
 
-        ensureUsernameIsAvailable(request.getUsername());
-        ensureEmailIsAvailable(request.getEmail());
-        ensurePhoneNumberIsAvailable(request.getPhoneNumber());
+        logger.info("Signup attempt for username '{}'", username);
+
+        ensureUsernameIsAvailable(username);
+        ensureEmailIsAvailable(email);
+        ensurePhoneNumberIsAvailable(phoneNumber);
 
         String encodedPassword = passwordEncoder.encode(request.getPassword());
+        int age = calculateAge(request.getDateOfBirth());
 
         User newUser = new User(
                 null,
-                request.getUsername(),
+                username,
                 encodedPassword,
-                request.getEmail(),
-                request.getPhoneNumber(),
-                request.getDateOfBirth()
+                email,
+                phoneNumber,
+                request.getDateOfBirth(),
+                age
         );
 
         mongoTemplate.insert(newUser);
@@ -68,9 +80,7 @@ public class AuthService {
 
         User user = findUserByUsernameOrThrow(request.getUsername());
 
-        boolean passwordMatches = passwordEncoder.matches(request.getPassword(), user.getPassword());
-
-        if (!passwordMatches) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             logger.warn("Login failed for username '{}': incorrect password", request.getUsername());
             throw new InvalidCredentialsException("Invalid username or password");
         }
@@ -80,40 +90,88 @@ public class AuthService {
         return "Login successful";
     }
 
-    public String updateCredentials(UpdateRequest request) {
+    public String updateUsername(UpdateUsernameRequest request) {
 
-        logger.info("Profile update attempt for username '{}'", request.getCurrentUsername());
+        User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
 
-        User currentUser = findUserByUsernameOrThrow(request.getCurrentUsername());
+        String newUsername = request.getNewUsername().trim();
 
-        boolean passwordMatches = passwordEncoder.matches(request.getCurrentPassword(), currentUser.getPassword());
+        if (!newUsername.equals(currentUser.getUsername())) {
+            ensureUsernameIsAvailable(newUsername);
+            applyFieldUpdate(currentUser.getUsername(), "username", newUsername);
+        }
 
-        if (!passwordMatches) {
-            logger.warn("Profile update failed for username '{}': incorrect current password", request.getCurrentUsername());
+        logger.info("Username updated for '{}' -> '{}'", request.getCurrentUsername(), newUsername);
+
+        return "Username updated successfully";
+    }
+
+    public String updatePassword(UpdatePasswordRequest request) {
+
+        User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
+
+        String encodedPassword = passwordEncoder.encode(request.getNewPassword());
+        applyFieldUpdate(currentUser.getUsername(), "password", encodedPassword);
+
+        logger.info("Password updated for '{}'", request.getCurrentUsername());
+
+        return "Password updated successfully";
+    }
+
+    public String updateEmail(UpdateEmailRequest request) {
+
+        User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
+
+        String newEmail = request.getNewEmail().trim();
+
+        if (!newEmail.equals(currentUser.getEmail())) {
+            ensureEmailIsAvailable(newEmail);
+            applyFieldUpdate(currentUser.getUsername(), "email", newEmail);
+        }
+
+        logger.info("Email updated for '{}'", request.getCurrentUsername());
+
+        return "Email updated successfully";
+    }
+
+    public String updatePhoneNumber(UpdatePhoneNumberRequest request) {
+
+        User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
+
+        String newPhoneNumber = request.getNewPhoneNumber().trim();
+
+        if (!newPhoneNumber.equals(currentUser.getPhoneNumber())) {
+            ensurePhoneNumberIsAvailable(newPhoneNumber);
+            applyFieldUpdate(currentUser.getUsername(), "phoneNumber", newPhoneNumber);
+        }
+
+        logger.info("Phone number updated for '{}'", request.getCurrentUsername());
+
+        return "Phone number updated successfully";
+    }
+
+    public String deleteUser(DeleteUserRequest request) {
+
+        User currentUser = verifyIdentityOrThrow(request.getUsername(), request.getPassword());
+
+        Query query = Query.query(Criteria.where("username").is(currentUser.getUsername()));
+        mongoTemplate.remove(query, User.class);
+
+        logger.warn("Account deleted for username '{}'", request.getUsername());
+
+        return "Account deleted successfully";
+    }
+
+    private User verifyIdentityOrThrow(String username, String password) {
+
+        User user = findUserByUsernameOrThrow(username);
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            logger.warn("Identity check failed for username '{}': incorrect password", username);
             throw new InvalidCredentialsException("Current password is incorrect");
         }
 
-        Update update = buildUpdateFromRequest(request, currentUser);
-
-        // MongoDB treats an update document with no operators
-        // (no $set at all) as a full REPLACEMENT of the matched document,
-        // not a "do nothing" no-op. If none of the optional fields were
-        // actually filled in, calling updateFirst() here would wipe out
-        // the user's existing username/password/email/phone. So if there's
-        // truly nothing to change, we skip the database call entirely.
-
-        if (update.getUpdateObject().isEmpty()) {
-            logger.info("No changes submitted for username '{}'; nothing to update", request.getCurrentUsername());
-            return "Password verified. No new details were provided, so nothing was changed.";
-        }
-
-        Query query = Query.query(Criteria.where("username").is(currentUser.getUsername()));
-
-        mongoTemplate.updateFirst(query, update, User.class);
-
-        logger.info("Profile updated successfully for username '{}'", request.getCurrentUsername());
-
-        return "Profile updated successfully";
+        return user;
     }
 
     private User findUserByUsernameOrThrow(String username) {
@@ -126,62 +184,33 @@ public class AuthService {
 
     private void ensureUsernameIsAvailable(String username) {
         userRepository.findByUsernameManual(username).ifPresent(existingUser -> {
-            logger.warn("Signup rejected: username '{}' is already taken", username);
+            logger.warn("Rejected: username '{}' is already taken", username);
             throw new UserAlreadyExistsException("Username '" + username + "' is already taken");
         });
     }
 
     private void ensureEmailIsAvailable(String email) {
         userRepository.findByEmailManual(email).ifPresent(existingUser -> {
-            logger.warn("Signup rejected: email is already in use");
+            logger.warn("Rejected: email is already in use");
             throw new UserAlreadyExistsException("An account with this email already exists");
         });
     }
 
     private void ensurePhoneNumberIsAvailable(String phoneNumber) {
         userRepository.findByPhoneNumberManual(phoneNumber).ifPresent(existingUser -> {
-            logger.warn("Signup rejected: phone number is already in use");
+            logger.warn("Rejected: phone number is already in use");
             throw new UserAlreadyExistsException("An account with this phone number already exists");
         });
     }
 
-    private Update buildUpdateFromRequest(UpdateRequest request, User currentUser) {
-
-        Update update = new Update();
-
-        boolean wantsUsernameChange = isPresent(request.getNewUsername())
-                && !request.getNewUsername().equals(currentUser.getUsername());
-
-        if (wantsUsernameChange) {
-            ensureUsernameIsAvailable(request.getNewUsername());
-            update.set("username", request.getNewUsername());
-        }
-
-        if (isPresent(request.getNewPassword())) {
-            update.set("password", passwordEncoder.encode(request.getNewPassword()));
-        }
-
-        boolean wantsEmailChange = isPresent(request.getNewEmail())
-                && !request.getNewEmail().equals(currentUser.getEmail());
-
-        if (wantsEmailChange) {
-            ensureEmailIsAvailable(request.getNewEmail());
-            update.set("email", request.getNewEmail());
-        }
-
-        boolean wantsPhoneChange = isPresent(request.getNewPhoneNumber())
-                && !request.getNewPhoneNumber().equals(currentUser.getPhoneNumber());
-
-        if (wantsPhoneChange) {
-            ensurePhoneNumberIsAvailable(request.getNewPhoneNumber());
-            update.set("phoneNumber", request.getNewPhoneNumber());
-        }
-
-        return update;
+    private void applyFieldUpdate(String username, String fieldName, String newValue) {
+        Query query = Query.query(Criteria.where("username").is(username));
+        Update update = new Update().set(fieldName, newValue);
+        mongoTemplate.updateFirst(query, update, User.class);
     }
 
-    private boolean isPresent(String value) {
-        return value != null && !value.isBlank();
+    private int calculateAge(LocalDate dateOfBirth) {
+        return Period.between(dateOfBirth, LocalDate.now()).getYears();
     }
 
 }

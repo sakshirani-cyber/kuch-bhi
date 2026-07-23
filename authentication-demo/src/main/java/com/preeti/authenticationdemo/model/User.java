@@ -8,7 +8,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDate;
-import java.time.Period;
 
 @Getter
 @Setter
@@ -30,11 +29,6 @@ public class User {
 
     private LocalDate dateOfBirth;
 
-    public int getAge() {
-        if (dateOfBirth == null) {
-            return 0;
-        }
-        return Period.between(dateOfBirth, LocalDate.now()).getYears();
-    }
+    private Integer age;
 
 }
