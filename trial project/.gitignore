@@ -4,3 +4,9 @@
 frontend.zip
 myProject.zip
 .cursor
+
+# Secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+!**/.env.example
