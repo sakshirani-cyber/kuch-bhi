@@ -1,51 +1,45 @@
 package com.example.backend.controller;
 
+import com.example.backend.dto.request.LoginRequest;
+import com.example.backend.dto.request.SignupRequest;
+import com.example.backend.dto.request.UpdateProfileRequest;
+import com.example.backend.dto.response.AuthResponse;
 import com.example.backend.service.UserService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    
-    private UserService service;
+    private final UserService userService;
 
-	public AuthController(UserService service) {
-		this.service = service;
-	}
+    public AuthController(UserService userService) {
+        this.userService = userService;
+    }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody Map<String, String> body) {
-        String identifier = body.get("identifier");
-        String password = body.get("password");
-
-        try {
-            service.login(identifier, password);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Hi there"));
-        } catch (IllegalArgumentException e) {
-            String msg = e.getMessage();
-            if ("USER_NOT_FOUND".equals(msg)) {
-                return ResponseEntity.status(404).body(Map.of("success", false, "message", msg));
-            }
-            return ResponseEntity.status(401).body(Map.of("success", false, "message", msg));
-        }
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<Map<String, Object>> signup(@RequestBody Map<String, String> body) {
-        String username = body.get("username");
-        String email = body.get("email");
-        String password = body.get("password");
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
+        AuthResponse response = userService.signup(request);
+        return ResponseEntity.ok(response);
+    }
 
-        try {
-            service.signup(username, email, password);
-            return ResponseEntity.ok(Map.of("success", true, "message", "Account created successfully"));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(409).body(Map.of("success", false, "message", e.getMessage()));
-        }
+    @PutMapping("/update-profile")
+    public ResponseEntity<AuthResponse> updateProfile(@Valid @RequestBody UpdateProfileRequest request) {
+        AuthResponse response = userService.updateProfile(request);
+        return ResponseEntity.ok(response);
     }
 }
