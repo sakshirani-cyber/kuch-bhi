@@ -1,8 +1,18 @@
 package com.preeti.authenticationdemo.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDate;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Document(collection = "users")
 public class User {
 
@@ -13,31 +23,12 @@ public class User {
 
     private String password;
 
-    public User() {
-    }
+    private String email;
 
-    public User(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
+    private String phoneNumber;
 
-    public String getId() {
-        return id;
-    }
+    private LocalDate dateOfBirth;
 
-    public String getUsername() {
-        return username;
-    }
+    private Integer age;
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
 }
