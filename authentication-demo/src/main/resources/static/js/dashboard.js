@@ -31,7 +31,9 @@ function wireUpdateRow({ inputId, buttonId, endpoint, buildBody, successLabel })
     const username = sessionStorage.getItem('username');
     const body = buildBody(username, currentPasswordInput.value, input.value.trim());
 
+    setLoading(button, true);
     const result = await callApi(endpoint, 'PUT', body);
+    setLoading(button, false);
 
     if (result.ok) {
       showMsg(successLabel, false);
@@ -111,10 +113,13 @@ deleteBtn.addEventListener('click', async () => {
   }
 
   const username = sessionStorage.getItem('username');
+
+  setLoading(deleteBtn, true);
   const result = await callApi(`${API_BASE}/delete`, 'DELETE', {
     username,
     password: currentPasswordInput.value
   });
+  setLoading(deleteBtn, false);
 
   if (result.ok) {
     sessionStorage.removeItem('username');
