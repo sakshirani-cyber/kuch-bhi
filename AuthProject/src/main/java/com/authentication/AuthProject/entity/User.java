@@ -39,11 +39,14 @@ public class User {
     @Column(nullable = false, unique = true, length = 100 )
     private String email;
 
-    @Column(nullable = false, unique = true, length = 15)
+    @Column(nullable = false, length = 512)
     private String phoneNumber;
 
+    @Column(nullable = false, unique = true, length = 64)
+    private String phoneNumberHash;
+
     @JsonIgnore
-    @Column(nullable = false)
+    @Column(nullable = false, length = 60)
     private String password;
 
     @Column(nullable = false)
