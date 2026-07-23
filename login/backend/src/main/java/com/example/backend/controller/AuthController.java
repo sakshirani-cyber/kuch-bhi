@@ -1,9 +1,9 @@
 package com.example.backend.controller;
 
-import com.example.backend.dto.AuthResponse;
-import com.example.backend.dto.LoginRequest;
-import com.example.backend.dto.SignupRequest;
-import com.example.backend.dto.UpdateProfileRequest;
+import com.example.backend.dto.request.LoginRequest;
+import com.example.backend.dto.request.SignupRequest;
+import com.example.backend.dto.request.UpdateProfileRequest;
+import com.example.backend.dto.response.AuthResponse;
 import com.example.backend.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
-// allow all origins for now
-
 public class AuthController {
 
     private final UserService userService;
