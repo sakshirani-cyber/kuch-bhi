@@ -164,7 +164,7 @@ function proceedToEditProfile() {
     // Pre-fill edit form
     document.getElementById('edit-firstName').value = currentUser.firstName || '';
     document.getElementById('edit-lastName').value = currentUser.lastName || '';
-    document.getElementById('edit-gender').value = currentUser.gender || 'Prefer not to say';
+    document.getElementById('edit-gender').value = currentUser.gender || 'OTHER';
     document.getElementById('edit-contact').value = currentUser.contactNumber || '';
     document.getElementById('edit-dob').value = currentUser.dob || '';
     document.getElementById('edit-address').value = currentUser.address || '';
