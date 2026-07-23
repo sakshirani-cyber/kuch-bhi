@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>User Dashboard</title>
+
+    <link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<nav>
+
+    <h2>User Dashboard</h2>
+
+    <ul>
+
+        <li>
+            <a href="dashboard.html">Dashboard</a>
+        </li>
+
+        <li>
+            <a href="update-username.html">
+                Update Username
+            </a>
+        </li>
+
+        <li>
+            <a href="update-password.html">
+                Update Password
+            </a>
+        </li>
+
+        <li>
+            <a href="#" onclick="logout()">
+                Logout
+            </a>
+        </li>
+
+    </ul>
+
+</nav>
+
+<div class="dashboard">
+
+    <h2>Profile</h2>
+
+    <div id="message"></div>
+
+    <div class="info">
+
+        <span>User ID</span>
+
+        <span id="userId">Loading...</span>
+
+    </div>
+
+    <div class="info">
+
+        <span>Username</span>
+
+        <span id="username">Loading...</span>
+
+    </div>
+
+    <div class="info">
+
+        <span>Email</span>
+
+        <span id="email">Loading...</span>
+
+    </div>
+
+    <div class="info">
+        <span>Contact Number</span>
+        <span id="contactNumber">Loading...</span>
+    </div>
+
+    <div class="info">
+        <span>Date of Birth</span>
+        <span id="dateOfBirth">Loading...</span>
+    </div>
+
+    <div class="info">
+        <span>Age</span>
+        <span id="age">Loading...</span>
+    </div>
+
+    <div class="actions">
+
+        <a href="update-username.html">
+
+            Update Username
+
+        </a>
+
+        <a href="update-password.html">
+
+            Update Password
+
+        </a>
+
+    </div>
+
+</div>
+
+<script src="js/api.js"></script>
+
+<script src="js/dashboard.js"></script>
+
+</body>
+
+</html>
