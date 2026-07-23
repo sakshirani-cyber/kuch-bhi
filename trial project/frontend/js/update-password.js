@@ -1,13 +1,16 @@
 const form = document.getElementById("passwordForm");
 const message = document.getElementById("message");
 const button = document.getElementById("updateBtn");
-const userId = localStorage.getItem("userId");
+const userEmail = localStorage.getItem("userEmail");
 
-if (!userId) {
+if (!userEmail) {
     window.location.href = "login.html";
 }
 
-const refreshSubmitState = bindRequiredSubmit(form, button, ["password"]);
+const refreshSubmitState = bindValidatedSubmit(form, button, [
+    { id: "currentPassword", validator: "currentPassword" },
+    { id: "newPassword", validator: "newPassword" }
+]);
 
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -20,12 +23,13 @@ form.addEventListener("submit", async function (e) {
     button.disabled = true;
     button.innerHTML = "Updating...";
 
-    const password = document.getElementById("password").value.trim();
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
 
     try {
-        const response = await updatePassword(userId, password);
+        const response = await updatePassword(userEmail, currentPassword, newPassword);
 
-        message.innerHTML = `<div class="success">${response.message || "Password Updated Successfully."}</div>`;
+        message.innerHTML = `<div class="success">${escapeHtml(response.message || "Password Updated Successfully.")}</div>`;
 
         setTimeout(() => {
             window.location.href = "dashboard.html";

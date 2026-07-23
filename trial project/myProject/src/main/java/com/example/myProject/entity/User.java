@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
+import java.time.Period;
 
 @Getter
 @Setter
@@ -40,15 +41,16 @@ public class User {
     @Column(nullable = false)
     private LocalDate dateOfBirth;
 
-    @Column(nullable = false)
+    @Column
     private Integer age;
 
-    public User(String username, String email, String password, String contactNumber, LocalDate dateOfBirth, Integer age) {
-        this.username = username;
-        this.email = email;
-        this.password = password;
-        this.contactNumber = contactNumber;
-        this.dateOfBirth = dateOfBirth;
-        this.age = age;
-    }
+     public void setAge() {
+         if (dateOfBirth == null) {
+             this.age = null;
+             return;
+         }
+         this.age = Period.between(dateOfBirth, LocalDate.now()).getYears();
+     }
+
+
 }

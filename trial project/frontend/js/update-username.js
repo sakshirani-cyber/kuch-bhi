@@ -1,13 +1,22 @@
 const form = document.getElementById("usernameForm");
 const message = document.getElementById("message");
 const button = document.getElementById("updateBtn");
-const userId = localStorage.getItem("userId");
+const userEmail = localStorage.getItem("userEmail");
 
-if (!userId) {
+if (!userEmail) {
     window.location.href = "login.html";
 }
 
-const refreshSubmitState = bindRequiredSubmit(form, button, ["username"]);
+const currentUsernameInput = document.getElementById("currentUsername");
+const savedUsername = localStorage.getItem("userName");
+if (savedUsername) {
+    currentUsernameInput.value = savedUsername;
+}
+
+const refreshSubmitState = bindValidatedSubmit(form, button, [
+    { id: "currentUsername", validator: "currentUsername" },
+    { id: "newUsername", validator: "newUsername" }
+]);
 
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -20,12 +29,14 @@ form.addEventListener("submit", async function (e) {
     button.disabled = true;
     button.innerHTML = "Updating...";
 
-    const username = document.getElementById("username").value.trim();
+    const currentUsername = document.getElementById("currentUsername").value.trim();
+    const newUsername = document.getElementById("newUsername").value.trim();
 
     try {
-        const response = await updateUsername(userId, username);
+        const response = await updateUsername(userEmail, currentUsername, newUsername);
 
-        message.innerHTML = `<div class="success">${response.message || "Username Updated Successfully."}</div>`;
+        localStorage.setItem("userName", newUsername);
+        message.innerHTML = `<div class="success">${escapeHtml(response.message || "Username Updated Successfully.")}</div>`;
 
         setTimeout(() => {
             window.location.href = "dashboard.html";

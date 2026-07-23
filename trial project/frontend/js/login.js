@@ -1,7 +1,10 @@
 const form = document.getElementById("loginForm");
 const message = document.getElementById("message");
 const button = document.getElementById("loginBtn");
-const refreshSubmitState = bindRequiredSubmit(form, button, ["email", "password"]);
+const refreshSubmitState = bindValidatedSubmit(form, button, [
+    { id: "email", validator: "email" },
+    { id: "password", validator: "password" }
+]);
 
 form.addEventListener("submit", async function (e) {
     e.preventDefault();
@@ -15,15 +18,17 @@ form.addEventListener("submit", async function (e) {
     button.innerHTML = "Logging In...";
 
     const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value.trim();
+    const password = document.getElementById("password").value;
 
     try {
-        const response = await login({
+        const { user } = await login({
             email: email,
             password: password
         });
 
-        localStorage.setItem("userId", response.userId);
+        localStorage.setItem("userId", String(user.userId));
+        localStorage.setItem("userName", user.userName || "");
+        localStorage.setItem("userEmail", user.userEmail || email);
         window.location.href = "dashboard.html";
     } catch (error) {
         message.innerHTML = formatApiError(error);

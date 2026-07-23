@@ -1,6 +1,5 @@
 package com.example.myProject.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -11,11 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class LoginRequest {
-
-    @NotBlank(message = "Email is mandatory")
-    @Email(message = "Invalid email format")
-    private String email;
+public class DeleteUserRequest {
 
     @NotBlank(message = "Password is mandatory")
     @Size(min = 8, max = 20, message = "Password must be 8-20 characters")
