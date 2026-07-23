@@ -1,52 +1,44 @@
 package com.authentication.AuthProject.controller;
 
-import com.authentication.AuthProject.dto.LoginRequest;
-import com.authentication.AuthProject.dto.SignupRequest;
+import com.authentication.AuthProject.dto.request.LoginRequest;
+import com.authentication.AuthProject.dto.request.SignupRequest;
+import com.authentication.AuthProject.dto.response.AuthResponse;
 import com.authentication.AuthProject.service.AuthService;
-import org.springframework.stereotype.Controller;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@Controller
+@RestController
+@RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthService service;
 
-    public AuthController(AuthService service) {
-        this.service = service;
-    }
-
-    @RequestMapping("/")
-    @ResponseBody
-    public String greet(){
-        return "Project is Running";
-    }
-
-    @GetMapping("/signup")
-    public String signUpPage(){
-        return "signup";
+    @GetMapping
+    public String greet() {
+        return "Authentication API is Running";
     }
 
     @PostMapping("/signup")
-    @ResponseBody
-    public String signup(@RequestBody SignupRequest request){
+    public ResponseEntity<AuthResponse> signup(
+            @Valid @RequestBody SignupRequest request) {
 
-        return service.signup(request);
+        AuthResponse response = service.signup(request);
 
-    }
-
-    @GetMapping("/login")
-    public String loginPage() {
-        return "login";
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(response);
     }
 
     @PostMapping("/login")
-    @ResponseBody
-    public String login(@RequestBody LoginRequest request) {
-        return service.login(request);
-    }
+    public ResponseEntity<AuthResponse> login(
+            @Valid @RequestBody LoginRequest request) {
 
-    @GetMapping("/home")
-    public String homePage() {
-        return "home";
+        AuthResponse response = service.login(request);
+
+        return ResponseEntity.ok(response);
     }
 }
+
