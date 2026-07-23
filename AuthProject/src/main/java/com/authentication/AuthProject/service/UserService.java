@@ -10,7 +10,10 @@ import com.authentication.AuthProject.exception.InvalidCredentialsException;
 import com.authentication.AuthProject.exception.ResourceNotFoundException;
 import com.authentication.AuthProject.repository.UserRepository;
 import com.authentication.AuthProject.util.AgeCalculator;
+import com.authentication.AuthProject.util.EncryptionService;
+import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
 
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
+    private final EncryptionService encryptionService;
+    private final PhoneHashService phoneHashService;
 
     public UserResponse getUser(Long id) {
 
@@ -38,9 +44,10 @@ public class UserService {
                         new ResourceNotFoundException("User not found."));
 
         String newPhone = request.getPhoneNumber();
+        String newPhoneHash = phoneHashService.hash(newPhone);
 
-        if (!user.getPhoneNumber().equals(newPhone)
-                && repository.existsByPhoneNumber(newPhone)) {
+        if (!user.getPhoneNumberHash().equals(newPhoneHash)
+                && repository.existsByPhoneNumberHash(newPhoneHash)) {
 
             throw new DuplicateResourceException(
                     "Phone number already registered.");
@@ -50,7 +57,8 @@ public class UserService {
         user.setLastName(request.getLastName());
         user.setDob(request.getDob());
         user.setGender(request.getGender());
-        user.setPhoneNumber(newPhone);
+        user.setPhoneNumber(encryptionService.encrypt(newPhone));
+        user.setPhoneNumberHash(newPhoneHash);
 
         return toResponse(user);
     }
@@ -62,7 +70,7 @@ public class UserService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("User not found."));
 
-        if (!user.getPassword().equals(request.getCurrentPassword())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             throw new InvalidCredentialsException(
                     "Current password is incorrect.");
         }
@@ -77,7 +85,7 @@ public class UserService {
                     "New password must be different from current password.");
         }
 
-        user.setPassword(request.getNewPassword());
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     }
 
     private UserResponse toResponse(User user) {
@@ -91,7 +99,7 @@ public class UserService {
                 .age(AgeCalculator.calculate(user.getDob()))
                 .gender(user.getGender())
                 .email(user.getEmail())
-                .phoneNumber(user.getPhoneNumber())
+                .phoneNumber(encryptionService.decrypt(user.getPhoneNumber()))
                 .build();
     }
 }

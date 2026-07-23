@@ -16,7 +16,7 @@ public interface UserRepository extends JpaRepository<User,Long> {
 
     boolean existsByEmail(@NotBlank(message = "Email is required") String email);
 
-    boolean existsByPhoneNumber(@NotBlank(message = "Phone number is required") String phoneNumber);
+    boolean existsByPhoneNumberHash(@NotBlank(message = "Phone number is required") String phoneNumberHash);
 
 }
 

@@ -7,7 +7,10 @@ import com.authentication.AuthProject.entity.User;
 import com.authentication.AuthProject.exception.DuplicateResourceException;
 import com.authentication.AuthProject.exception.InvalidCredentialsException;
 import com.authentication.AuthProject.repository.UserRepository;
+import com.authentication.AuthProject.util.EncryptionService;
+import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -15,6 +18,9 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     private final UserRepository repository;
+    private final PasswordEncoder passwordEncoder;
+    private final EncryptionService encryptionService;
+    private final PhoneHashService phoneHashService;
 
     public AuthResponse signup(SignupRequest request) {
 
@@ -22,7 +28,9 @@ public class AuthService {
             throw new DuplicateResourceException("Email already registered.");
         }
 
-        if (repository.existsByPhoneNumber(request.getPhoneNumber())) {
+        String phoneHash = phoneHashService.hash(request.getPhoneNumber());
+
+        if (repository.existsByPhoneNumberHash(phoneHash)) {
             throw new DuplicateResourceException("Phone number already registered.");
         }
 
@@ -32,8 +40,9 @@ public class AuthService {
                 .dob(request.getDob())
                 .gender(request.getGender())
                 .email(request.getEmail())
-                .phoneNumber(request.getPhoneNumber())
-                .password(request.getPassword())
+                .phoneNumber(encryptionService.encrypt(request.getPhoneNumber()))
+                .phoneNumberHash(phoneHash)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .build();
 
         User savedUser = repository.save(user);
@@ -50,7 +59,7 @@ public class AuthService {
                 .orElseThrow(() ->
                         new InvalidCredentialsException("Invalid email or password."));
 
-        if (!user.getPassword().equals(request.getPassword())) {
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
