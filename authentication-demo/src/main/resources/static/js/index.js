@@ -35,7 +35,9 @@ loginForm.addEventListener('submit', async (e) => {
   const username = document.getElementById('loginUsername').value.trim();
   const password = document.getElementById('loginPassword').value;
 
+  setLoading(loginSubmit, true);
   const result = await callApi(`${API_BASE}/login`, 'POST', { username, password });
+  setLoading(loginSubmit, false);
 
   if (result.ok) {
     sessionStorage.setItem('username', username);
@@ -53,9 +55,11 @@ signupForm.addEventListener('submit', async (e) => {
   const phoneNumber = document.getElementById('signupPhone').value.trim();
   const dateOfBirth = document.getElementById('signupDob').value;
 
+  setLoading(signupSubmit, true);
   const result = await callApi(`${API_BASE}/signup`, 'POST', {
     username, password, email, phoneNumber, dateOfBirth
   });
+  setLoading(signupSubmit, false);
 
   if (result.ok) {
     showMsg('Account created! You can log in now.', false);

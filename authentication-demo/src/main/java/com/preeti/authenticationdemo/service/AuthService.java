@@ -1,5 +1,6 @@
 package com.preeti.authenticationdemo.service;
 
+import com.preeti.authenticationdemo.cache.CacheService;
 import com.preeti.authenticationdemo.dto.DeleteUserRequest;
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.SignupRequest;
@@ -33,13 +34,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final MongoTemplate mongoTemplate;
+    private final CacheService cacheService;
 
     public AuthService(UserRepository userRepository,
                         PasswordEncoder passwordEncoder,
-                        MongoTemplate mongoTemplate) {
+                        MongoTemplate mongoTemplate,
+                        CacheService cacheService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mongoTemplate = mongoTemplate;
+        this.cacheService = cacheService;
     }
 
     public String signup(SignupRequest request) {
@@ -68,6 +72,10 @@ public class AuthService {
         );
 
         mongoTemplate.insert(newUser);
+
+        // Write-through: populate the cache immediately so the very
+        // first login right after signup is already a cache hit.
+        cacheService.putUser(newUser);
 
         logger.info("User '{}' registered successfully", newUser.getUsername());
 
@@ -99,6 +107,12 @@ public class AuthService {
         if (!newUsername.equals(currentUser.getUsername())) {
             ensureUsernameIsAvailable(newUsername);
             applyFieldUpdate(currentUser.getUsername(), "username", newUsername);
+
+            // The cache key IS the username, so a username change means
+            // evicting the old key and caching a fresh copy under the new one.
+            cacheService.evictUser(currentUser.getUsername());
+            currentUser.setUsername(newUsername);
+            cacheService.putUser(currentUser);
         }
 
         logger.info("Username updated for '{}' -> '{}'", request.getCurrentUsername(), newUsername);
@@ -112,6 +126,11 @@ public class AuthService {
 
         String encodedPassword = passwordEncoder.encode(request.getNewPassword());
         applyFieldUpdate(currentUser.getUsername(), "password", encodedPassword);
+
+        // Same username, so just refresh the cached copy in place —
+        // otherwise a cache hit would keep matching the OLD password hash.
+        currentUser.setPassword(encodedPassword);
+        cacheService.putUser(currentUser);
 
         logger.info("Password updated for '{}'", request.getCurrentUsername());
 
@@ -127,6 +146,9 @@ public class AuthService {
         if (!newEmail.equals(currentUser.getEmail())) {
             ensureEmailIsAvailable(newEmail);
             applyFieldUpdate(currentUser.getUsername(), "email", newEmail);
+
+            currentUser.setEmail(newEmail);
+            cacheService.putUser(currentUser);
         }
 
         logger.info("Email updated for '{}'", request.getCurrentUsername());
@@ -143,6 +165,9 @@ public class AuthService {
         if (!newPhoneNumber.equals(currentUser.getPhoneNumber())) {
             ensurePhoneNumberIsAvailable(newPhoneNumber);
             applyFieldUpdate(currentUser.getUsername(), "phoneNumber", newPhoneNumber);
+
+            currentUser.setPhoneNumber(newPhoneNumber);
+            cacheService.putUser(currentUser);
         }
 
         logger.info("Phone number updated for '{}'", request.getCurrentUsername());
@@ -156,6 +181,8 @@ public class AuthService {
 
         Query query = Query.query(Criteria.where("username").is(currentUser.getUsername()));
         mongoTemplate.remove(query, User.class);
+
+        cacheService.evictUser(currentUser.getUsername());
 
         logger.warn("Account deleted for username '{}'", request.getUsername());
 
@@ -174,12 +201,27 @@ public class AuthService {
         return user;
     }
 
+    /**
+     * Cache-aside read: check Caffeine in-memory cache first, and only fall through to
+     * MongoDB on a cache miss.
+     */
     private User findUserByUsernameOrThrow(String username) {
-        Optional<User> existingUser = userRepository.findByUsernameManual(username);
-        return existingUser.orElseThrow(() -> {
+
+        Optional<User> cachedUser = cacheService.getUser(username);
+        if (cachedUser.isPresent()) {
+            return cachedUser.get();
+        }
+
+        Optional<User> userFromDatabase = userRepository.findByUsernameManual(username);
+
+        User user = userFromDatabase.orElseThrow(() -> {
             logger.warn("No account found for username '{}'", username);
             return new UserNotFoundException("No account found with that username");
         });
+
+        cacheService.putUser(user);
+
+        return user;
     }
 
     private void ensureUsernameIsAvailable(String username) {
@@ -203,6 +245,11 @@ public class AuthService {
         });
     }
 
+    /**
+     * Every single-field update always has exactly one non-blank
+     * new value (guaranteed by @NotBlank on the DTO), so the update
+     * document sent to Mongo can never be empty here.
+     */
     private void applyFieldUpdate(String username, String fieldName, String newValue) {
         Query query = Query.query(Criteria.where("username").is(username));
         Update update = new Update().set(fieldName, newValue);

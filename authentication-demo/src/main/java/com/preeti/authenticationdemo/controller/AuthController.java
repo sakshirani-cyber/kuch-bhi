@@ -18,8 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-//This controller's only job is routing HTTP requests to the right service method.
-
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
