@@ -1,7 +1,8 @@
 package com.example.myProject.controller;
 
+import com.example.myProject.dto.ApiResponse;
+import com.example.myProject.dto.DeleteUserRequest;
 import com.example.myProject.dto.LoginRequest;
-import com.example.myProject.dto.MessageResponse;
 import com.example.myProject.dto.RegisterRequest;
 import com.example.myProject.dto.UpdatePasswordRequest;
 import com.example.myProject.dto.UpdateUsernameRequest;
@@ -14,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,111 +39,118 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<MessageResponse> register(@Valid @RequestBody RegisterRequest request) {
-        log.info("POST /api/v1/auth/register email={}", request.getEmail());
+    public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("New User Registration processing with email={}", request.getEmail());
         try {
-            MessageResponse response = service.register(request);
-            log.info("POST /api/v1/auth/register completed email={}", request.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            ApiResponse<Void> body = service.register(request);
+            return ResponseEntity.status(body.getStatus()).body(body);
         } catch (ApiException ex) {
-            log.warn("POST /api/v1/auth/register failed email={} status={} message={}",
-                    request.getEmail(), ex.getStatus(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("POST /api/v1/auth/register unexpected error email={}", request.getEmail(), ex);
+            log.error("unexpected error email={}", request.getEmail(), ex);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Registration failed",
-                    Map.of("error", ex.getMessage())
+                    Map.of("error", "Unable to register user. Please try again.")
             );
         }
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
-        log.info("POST /api/v1/auth/login email={}", request.getEmail());
+    public ResponseEntity<ApiResponse<UserResponse>> login(@Valid @RequestBody LoginRequest request) {
+        log.info("Login Attempted for email={}", request.getEmail());
         try {
-            UserResponse response = service.login(request);
-            log.info("POST /api/v1/auth/login completed userId={}", response.getUserId());
-            return ResponseEntity.ok(response);
+            ApiResponse<UserResponse> body = service.login(request);
+            return ResponseEntity.status(body.getStatus()).body(body);
         } catch (ApiException ex) {
-            log.warn("POST /api/v1/auth/login failed email={} status={} message={}",
-                    request.getEmail(), ex.getStatus(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("POST /api/v1/auth/login unexpected error email={}", request.getEmail(), ex);
+            log.error("unexpected error email={}", request.getEmail(), ex);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Login failed",
-                    Map.of("error", ex.getMessage())
+                    Map.of("error", "Unable to login. Please try again.")
             );
         }
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUser(@PathVariable Long id) {
-        log.info("GET /api/v1/auth/{}", id);
+    @GetMapping("/user/{email:.+}")
+    public ResponseEntity<ApiResponse<UserResponse>> getUserByEmail(@PathVariable("email") String email) {
+        log.info("Fetching User with email Id={}", email);
         try {
-            UserResponse response = service.getUser(id);
-            log.info("GET /api/v1/auth/{} completed", id);
-            return ResponseEntity.ok(response);
+            ApiResponse<UserResponse> body = service.getUser(email);
+            return ResponseEntity.status(body.getStatus()).body(body);
         } catch (ApiException ex) {
-            log.warn("GET /api/v1/auth/{} failed status={} message={}", id, ex.getStatus(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("GET /api/v1/auth/{} unexpected error", id, ex);
+            log.error("unexpected error in fetching user - {}", email, ex);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Unable to fetch user",
-                    Map.of("error", ex.getMessage())
+                    Map.of("error", "Unable to fetch user details. Please try again.")
             );
         }
     }
 
-    @PutMapping("/{id}/password")
-    public ResponseEntity<MessageResponse> updatePassword(
-            @PathVariable Long id,
+    @PutMapping("/update-password/{email:.+}")
+    public ResponseEntity<ApiResponse<Void>> updatePasswordByEmail(
+            @PathVariable("email") String email,
             @Valid @RequestBody UpdatePasswordRequest request
     ) {
-        log.info("PUT /api/v1/auth/{}/password", id);
+        log.info("Password Update Initiated for {}", email);
         try {
-            MessageResponse response = service.updatePassword(id, request);
-            log.info("PUT /api/v1/auth/{}/password completed", id);
-            return ResponseEntity.ok(response);
+            ApiResponse<Void> body = service.updatePassword(email, request);
+            return ResponseEntity.status(body.getStatus()).body(body);
         } catch (ApiException ex) {
-            log.warn("PUT /api/v1/auth/{}/password failed status={} message={}",
-                    id, ex.getStatus(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("PUT /api/v1/auth/{}/password unexpected error", id, ex);
+            log.error("{} password unexpected error", email, ex);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Password update failed",
-                    Map.of("error", ex.getMessage())
+                    Map.of("error", "Unable to update password. Please try again.")
             );
         }
     }
 
-    @PutMapping("/{id}/username")
-    public ResponseEntity<MessageResponse> updateUsername(
-            @PathVariable Long id,
+    @PutMapping("/update-username/{email:.+}")
+    public ResponseEntity<ApiResponse<Void>> updateUsernameByEmail(
+            @PathVariable("email") String email,
             @Valid @RequestBody UpdateUsernameRequest request
     ) {
-        log.info("PUT /api/v1/auth/{}/username", id);
+        log.info("Username update initiated for {}", email);
         try {
-            MessageResponse response = service.updateUsername(id, request);
-            log.info("PUT /api/v1/auth/{}/username completed", id);
-            return ResponseEntity.ok(response);
+            ApiResponse<Void> body = service.updateUsername(email, request);
+            return ResponseEntity.status(body.getStatus()).body(body);
         } catch (ApiException ex) {
-            log.warn("PUT /api/v1/auth/{}/username failed status={} message={}",
-                    id, ex.getStatus(), ex.getMessage());
             throw ex;
         } catch (Exception ex) {
-            log.error("PUT /api/v1/auth/{}/username unexpected error", id, ex);
+            log.error("Unexpected username update error for {}", email, ex);
             throw new ApiException(
                     HttpStatus.INTERNAL_SERVER_ERROR,
                     "Username update failed",
-                    Map.of("error", ex.getMessage())
+                    Map.of("error", "Unable to update username. Please try again.")
+            );
+        }
+    }
+
+    @DeleteMapping("/delete-user/{email:.+}")
+    public ResponseEntity<ApiResponse<Void>> deleteUserByEmail(
+            @PathVariable("email") String email,
+            @Valid @RequestBody DeleteUserRequest request
+    ) {
+        log.info("User deletion initiated for {}", email);
+        try {
+            ApiResponse<Void> body = service.deleteUser(email, request);
+            return ResponseEntity.status(body.getStatus()).body(body);
+        } catch (ApiException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            log.error("Unexpected user deletion error for {}", email, ex);
+            throw new ApiException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "User deletion failed",
+                    Map.of("error", "Unable to delete user. Please try again.")
             );
         }
     }

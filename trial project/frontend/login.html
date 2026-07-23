@@ -2,78 +2,50 @@
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
     <title>Login</title>
-
     <link rel="stylesheet" href="style.css">
-
 </head>
 
 <body>
 
 <div class="container">
-
     <div class="card">
-
         <h2>User Login</h2>
-
         <div id="message"></div>
 
-        <form id="loginForm">
-
+        <form id="loginForm" novalidate>
             <div class="form-group">
-
-                <label>Email</label>
-
-                <input
-                        type="email"
-                        id="email"
-                        placeholder="Enter Email"
-                        required>
-
+                <label for="email">Email <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="email" id="email" name="email" placeholder="Enter Email"
+                       maxlength="100" autocomplete="email" required
+                       aria-describedby="emailHint emailError">
+                <span class="field-hint" id="emailHint">Valid email address</span>
+                <span class="field-error" id="emailError" role="alert"></span>
             </div>
 
             <div class="form-group">
-
-                <label>Password</label>
-
-                <input
-                        type="password"
-                        id="password"
-                        placeholder="Enter Password"
-                        required>
-
+                <label for="password">Password <span class="required-mark" aria-hidden="true">*</span></label>
+                <input type="password" id="password" name="password" placeholder="Enter Password"
+                       minlength="8" maxlength="20" autocomplete="current-password" required
+                       aria-describedby="passwordHint passwordError">
+                <span class="field-hint" id="passwordHint">8–20 chars, uppercase, lowercase, number &amp; special character</span>
+                <span class="field-error" id="passwordError" role="alert"></span>
             </div>
 
-            <button id="loginBtn" type="submit" disabled>
-                Login
-            </button>
-
+            <button id="loginBtn" type="submit" class="btn" disabled>Login</button>
         </form>
 
         <div class="bottom-text">
-
             Don't have an account?
-
-            <a href="signup.html">
-
-                Signup
-
-            </a>
-
+            <a href="signup.html">Signup</a>
         </div>
-
     </div>
-
 </div>
 
 <script src="js/api.js"></script>
-
 <script src="js/login.js"></script>
 
 </body>
-
 </html>

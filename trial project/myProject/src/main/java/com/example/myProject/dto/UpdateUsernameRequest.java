@@ -11,7 +11,11 @@ import lombok.Setter;
 @NoArgsConstructor
 public class UpdateUsernameRequest {
 
+    @NotBlank(message = "Current username is mandatory")
+    @Size(min = 3, max = 50, message = "Current username must be between 3 and 50 characters")
+    private String currentUsername;
+
     @NotBlank(message = "New username is mandatory")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    @Size(min = 3, max = 50, message = "New username must be between 3 and 50 characters")
     private String newUsername;
 }

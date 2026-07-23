@@ -23,7 +23,8 @@ public class RegisterRequest {
     private String username;
 
     @NotBlank(message = "Email is mandatory")
-    @Email(message = "Invalid email")
+    @Email(message = "Invalid email format")
+    @Size(max = 100, message = "Email must be at most 100 characters")
     private String email;
 
     @NotBlank(message = "Contact number is mandatory")
@@ -36,8 +37,10 @@ public class RegisterRequest {
     private LocalDate dateOfBirth;
 
     @NotBlank(message = "Password is mandatory")
-    @Size(min = 8, message = "Password must contain at least 8 characters")
+    @Size(min = 8, max = 20, message = "Password must be 8-20 characters")
+    @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z\\d]).{8,20}$",
+            message = "Password must include uppercase, lowercase, number and special character"
+    )
     private String password;
-
-
 }
