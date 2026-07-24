@@ -17,11 +17,11 @@ public class SignupRequest {
     @Size(max = 50, message = "First name cannot exceed 50 characters")
     private String firstName;
 
-    @NotBlank(message = "Last name is required")
     @Size(max = 50, message = "Last name cannot exceed 50 characters")
     private String lastName;
 
     @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past")
     private LocalDate dob;
 
     @NotNull(message = "Gender is required")
@@ -39,7 +39,10 @@ public class SignupRequest {
     private String phoneNumber;
 
     @NotBlank(message = "Password is required")
-    @Size(min = 8, max = 20,
-            message = "Password must be between 8 and 20 characters")
+    @Size(min = 8, max = 20, message = "Password must be between 8 and 20 characters")
+    @Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&#])[A-Za-z\\d@$!%*?&#]{8,20}$",
+        message = "Password must contain uppercase, lowercase, number, and special character (@$!%*?&#)"
+    )
     private String password;
 }
