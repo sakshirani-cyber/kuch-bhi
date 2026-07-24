@@ -9,13 +9,15 @@ import com.authentication.AuthProject.exception.DuplicateResourceException;
 import com.authentication.AuthProject.exception.InvalidCredentialsException;
 import com.authentication.AuthProject.exception.ResourceNotFoundException;
 import com.authentication.AuthProject.repository.UserRepository;
-import com.authentication.AuthProject.util.AgeCalculator;
 import com.authentication.AuthProject.util.EncryptionService;
 import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.Period;
 
 
 @RequiredArgsConstructor
@@ -94,12 +96,20 @@ public class UserService {
                 .id(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .fullName(user.getFirstName() + " " + user.getLastName())
+                .fullName(buildFullName(user.getFirstName(), user.getLastName()))
                 .dob(user.getDob())
-                .age(AgeCalculator.calculate(user.getDob()))
+                .age(Period.between(user.getDob(), LocalDate.now()).getYears())
                 .gender(user.getGender())
                 .email(user.getEmail())
                 .phoneNumber(encryptionService.decrypt(user.getPhoneNumber()))
                 .build();
+    }
+
+
+    private String buildFullName(String firstName, String lastName) {
+    if (lastName == null || lastName.isBlank()) {
+        return firstName;
+    }
+    return firstName + " " + lastName;
     }
 }

@@ -1,5 +1,6 @@
 package com.authentication.AuthProject.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,6 +11,7 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -96,16 +98,16 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleException(Exception ex) {
+    public ResponseEntity<ApiErrorResponse> handleGlobalException(Exception ex) {
 
-        ex.printStackTrace(); // Later we'll replace this with a logger
+       log.error("Unexpected error occurred", ex);
 
-        return buildResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR,
-                "Something went wrong",
-                null
-        );
-    }
+       return buildResponse(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Something went wrong",
+            null
+    );
+}
 
     private ResponseEntity<ApiErrorResponse> buildResponse(
             HttpStatus status,
