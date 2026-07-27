@@ -12,6 +12,7 @@ import com.authentication.AuthProject.repository.UserRepository;
 import com.authentication.AuthProject.util.EncryptionService;
 import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.Period;
 
-
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class UserService {
@@ -30,27 +31,31 @@ public class UserService {
     private final PhoneHashService phoneHashService;
 
     public UserResponse getUser(Long id) {
-
+        log.debug("Attempting to retrieve user details for ID: {}", id);
         User user = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> {
+                    log.warn("User retrieval failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
 
         return toResponse(user);
     }
 
     @Transactional
     public UserResponse updateUser(Long id, UpdateProfileRequest request) {
-
+        log.debug("Attempting to update profile for user ID: {}", id);
         User user = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> {
+                    log.warn("User update failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
 
         String newPhone = request.getPhoneNumber();
         String newPhoneHash = phoneHashService.hash(newPhone);
 
         if (!user.getPhoneNumberHash().equals(newPhoneHash)
                 && repository.existsByPhoneNumberHash(newPhoneHash)) {
-
+            log.warn("User update failed: Phone number is already registered for another user");
             throw new DuplicateResourceException(
                     "Phone number already registered.");
         }
@@ -62,32 +67,39 @@ public class UserService {
         user.setPhoneNumber(encryptionService.encrypt(newPhone));
         user.setPhoneNumberHash(newPhoneHash);
 
+        log.info("Successfully updated user profile for ID: {}", id);
         return toResponse(user);
     }
 
     @Transactional
     public void changePassword(Long id, ChangePasswordRequest request) {
-
+        log.debug("Attempting to change password for user ID: {}", id);
         User user = repository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("User not found."));
+                .orElseThrow(() -> {
+                    log.warn("Password change failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            log.warn("Password change failed: Current password is incorrect for user ID {}", id);
             throw new InvalidCredentialsException(
                     "Current password is incorrect.");
         }
 
         if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            log.warn("Password change failed: New password and confirm password do not match for user ID {}", id);
             throw new BadRequestException(
                     "New password and confirm password do not match.");
         }
 
         if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            log.warn("Password change failed: New password must be different from current password for user ID {}", id);
             throw new BadRequestException(
                     "New password must be different from current password.");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        log.info("Successfully changed password for user ID: {}", id);
     }
 
     private UserResponse toResponse(User user) {

@@ -6,10 +6,12 @@ import com.authentication.AuthProject.dto.response.AuthResponse;
 import com.authentication.AuthProject.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -19,6 +21,7 @@ public class AuthController {
 
     @GetMapping
     public String greet() {
+        log.info("API healthcheck endpoint called");
         return "Authentication API is Running";
     }
 
@@ -26,7 +29,9 @@ public class AuthController {
     public ResponseEntity<AuthResponse> signup(
             @Valid @RequestBody SignupRequest request) {
 
+        log.info("Received signup request for email: {}", request.getEmail());
         AuthResponse response = service.signup(request);
+        log.info("Successfully registered user: {}", request.getEmail());
 
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(response);
@@ -36,7 +41,9 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(
             @Valid @RequestBody LoginRequest request) {
 
+        log.info("Received login request for email: {}", request.getEmail());
         AuthResponse response = service.login(request);
+        log.info("User logged in successfully: {}", request.getEmail());
 
         return ResponseEntity.ok(response);
     }

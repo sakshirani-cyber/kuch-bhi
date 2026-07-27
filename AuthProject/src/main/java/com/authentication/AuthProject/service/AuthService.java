@@ -10,9 +10,11 @@ import com.authentication.AuthProject.repository.UserRepository;
 import com.authentication.AuthProject.util.EncryptionService;
 import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class AuthService {
@@ -23,17 +25,21 @@ public class AuthService {
     private final PhoneHashService phoneHashService;
 
     public AuthResponse signup(SignupRequest request) {
-
+        log.debug("Checking duplicate email registration for: {}", request.getEmail());
         if (repository.existsByEmail(request.getEmail())) {
+            log.warn("Signup failed: Email {} is already registered.", request.getEmail());
             throw new DuplicateResourceException("Email already registered.");
         }
 
+        log.debug("Hashing and checking phone number duplicate registration.");
         String phoneHash = phoneHashService.hash(request.getPhoneNumber());
 
         if (repository.existsByPhoneNumberHash(phoneHash)) {
+            log.warn("Signup failed: Phone number is already registered.");
             throw new DuplicateResourceException("Phone number already registered.");
         }
 
+        log.debug("Building and saving new User entity.");
         User user = User.builder()
                 .firstName(request.getFirstName())
                 .lastName(request.getLastName())
@@ -46,6 +52,7 @@ public class AuthService {
                 .build();
 
         User savedUser = repository.save(user);
+        log.info("New user signed up successfully with ID: {}", savedUser.getId());
 
         return AuthResponse.builder()
                 .userId(savedUser.getId())
@@ -54,15 +61,20 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-
+        log.debug("Looking up user for login: {}", request.getEmail());
         User user = repository.findByEmail(request.getEmail())
-                .orElseThrow(() ->
-                        new InvalidCredentialsException("Invalid email or password."));
+                .orElseThrow(() -> {
+                    log.warn("Login failed: User not found with email: {}", request.getEmail());
+                    return new InvalidCredentialsException("Invalid email or password.");
+                });
 
+        log.debug("Verifying password credentials for: {}", request.getEmail());
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            log.warn("Login failed: Password mismatch for email: {}", request.getEmail());
             throw new InvalidCredentialsException("Invalid email or password.");
         }
 
+        log.info("User login validated successfully for ID: {}", user.getId());
         return AuthResponse.builder()
                 .userId(user.getId())
                 .message("Login successful")
