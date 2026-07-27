@@ -1,6 +1,7 @@
 package com.example.AuthProject.controller;
 
 import com.example.AuthProject.dto.ApiResponse;
+import com.example.AuthProject.dto.AuthResponse;
 import com.example.AuthProject.dto.DeleteUserRequest;
 import com.example.AuthProject.dto.LoginRequest;
 import com.example.AuthProject.dto.RegisterRequest;
@@ -42,9 +43,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<UserResponse>> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         log.info("Login Attempted for email={}", request.getEmail());
-        ApiResponse<UserResponse> body = service.login(request);
+        ApiResponse<AuthResponse> body = service.login(request);
         return ResponseEntity.status(body.getStatus()).body(body);
     }
 

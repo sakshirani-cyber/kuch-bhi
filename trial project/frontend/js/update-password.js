@@ -3,8 +3,8 @@ const message = document.getElementById("message");
 const button = document.getElementById("updateBtn");
 const userEmail = localStorage.getItem("userEmail");
 
-if (!userEmail) {
-    window.location.href = "login.html";
+if (!requireAuth()) {
+    // redirect handled by requireAuth
 }
 
 const refreshSubmitState = bindValidatedSubmit(form, button, [
