@@ -71,6 +71,11 @@ label {
     margin-bottom: 8px;
 }
 
+.required-star {
+    color: #ef4444;
+    margin-left: 2px;
+}
+
 input, select {
     width: 100%;
     background: rgba(9, 9, 11, 0.5);
