@@ -21,11 +21,12 @@ form.addEventListener("submit", async function (e) {
     const password = document.getElementById("password").value;
 
     try {
-        const { user } = await login({
+        const { token, user } = await login({
             email: email,
             password: password
         });
 
+        localStorage.setItem("token", token);
         localStorage.setItem("userId", String(user.userId));
         localStorage.setItem("userName", user.userName || "");
         localStorage.setItem("userEmail", user.userEmail || email);
