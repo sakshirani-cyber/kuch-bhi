@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="container large">
+    <h1>Welcome</h1>
+
+    <a class="btn" id="profileLink" href="#">View Profile</a>
+    <a class="btn" id="editProfileLink" href="#">Edit Profile</a>
+    <a class="btn" id="changePasswordLink" href="#">Change Password</a>
+    <a class="btn logout" href="#" id="logoutBtn">Logout</a>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const userId = requireAuth();
+    if (userId) {
+        document.getElementById('profileLink').href = `/profile.html?id=${userId}`;
+        document.getElementById('editProfileLink').href = `/edit-profile.html?id=${userId}`;
+        document.getElementById('changePasswordLink').href = `/change-password.html?id=${userId}`;
+        document.getElementById('logoutBtn').addEventListener('click', (event) => {
+            event.preventDefault();
+            logout();
+        });
+    }
+</script>
+
+</body>
+</html>
