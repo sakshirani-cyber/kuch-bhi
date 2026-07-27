@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="container large">
+    <h1>User Profile</h1>
+
+    <p id="error" class="error" hidden></p>
+
+    <table id="profileTable" hidden>
+        <tr>
+            <td><b>First Name</b></td>
+            <td id="firstName"></td>
+        </tr>
+        <tr>
+            <td><b>Last Name</b></td>
+            <td id="lastName"></td>
+        </tr>
+        <tr>
+            <td><b>Email</b></td>
+            <td id="email"></td>
+        </tr>
+        <tr>
+            <td><b>Phone Number</b></td>
+            <td id="phoneNumber"></td>
+        </tr>
+        <tr>
+            <td><b>Date Of Birth</b></td>
+            <td id="dob"></td>
+        </tr>
+        <tr>
+            <td><b>Age</b></td>
+            <td id="age"></td>
+        </tr>
+        <tr>
+            <td><b>Gender</b></td>
+            <td id="gender"></td>
+        </tr>
+    </table>
+
+    <a class="btn" id="editProfileLink" href="#">Edit Profile</a>
+    <a class="btn" id="homeLink" href="#">Home</a>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const userId = resolveAuthenticatedUserId();
+
+    if (!userId) {
+        throw new Error('Missing user id');
+    }
+
+    document.getElementById('editProfileLink').href = `/edit-profile.html?id=${userId}`;
+    document.getElementById('homeLink').href = '/home.html';
+
+    async function loadProfile() {
+        try {
+            const user = await apiRequest(`/api/users/${userId}`);
+
+            document.getElementById('firstName').textContent = user.firstName;
+            document.getElementById('lastName').textContent = user.lastName;
+            document.getElementById('email').textContent = user.email;
+            document.getElementById('phoneNumber').textContent = user.phoneNumber;
+            document.getElementById('dob').textContent = user.dob;
+            document.getElementById('age').textContent = user.age;
+            document.getElementById('gender').textContent = user.gender;
+            document.getElementById('profileTable').hidden = false;
+        } catch (error) {
+            showMessage('error', formatError(error), true);
+        }
+    }
+
+    loadProfile();
+</script>
+
+</body>
+</html>
