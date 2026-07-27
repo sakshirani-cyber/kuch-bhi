@@ -1,6 +1,8 @@
 package com.example.backend.dto.request;
 
 import com.example.backend.enums.Gender;
+import com.example.backend.validation.MinAge;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,7 +24,7 @@ public class SignupRequest {
 
 	@NotBlank(message = "Username is required")
 	@Size(min = 5, max = 14, message = "Username must be between 5 and 14 characters")
-	@Pattern(regexp = "^[a-zA-Z0-9_]{5,14}$", message = "Username can only contain alphanumeric characters and underscores")
+	@Pattern(regexp = "^(?!.*_.*_)[A-Za-z0-9_]{5,14}$", message = "Username can only contain alphanumeric characters and underscore")
 	private String username;
 
 	@NotBlank(message = "First name is required")
@@ -44,8 +46,12 @@ public class SignupRequest {
 
 	@NotBlank(message = "Password is required")
 	@Size(min = 8, max = 24, message = "Password must be between 8 and 24 characters")
-	@Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!]).*$", message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
+	@Pattern(regexp = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!(){}\\[\\]<>?]).*$", message = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character")
 	private String password;
+
+    @NotBlank(message = "Confirm password is required")
+    private String confirmPassword;
+
 
 	@NotBlank(message = "Contact number is required")
 	@Pattern(regexp = "^[0-9]{10}$", message = "Contact number must be 10 digits")
@@ -53,6 +59,7 @@ public class SignupRequest {
 
 	@NotNull(message = "Date of birth is required")
 	@PastOrPresent(message = "Date of birth cannot be in the future")
+	@MinAge(18)
 	private LocalDate dob;
 
 	@Size(max = 100, message = "Address cannot exceed 100 characters")

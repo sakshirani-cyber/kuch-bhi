@@ -1,7 +1,9 @@
-package com.example.backend.utils;
+package com.example.backend.service;
+
+// Service to handle encryption and decryption of sensitive data
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -11,17 +13,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-@Component
-public class EncryptionUtil {
+@Service
+public class EncryptionService {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
-    private static final int GCM_IV_LENGTH = 12; 
+    private static final int GCM_IV_LENGTH = 12;
     private static final int GCM_TAG_LENGTH = 128;
 
     private final SecretKeySpec key;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    public EncryptionUtil(@Value("${encryption.secret-key}") String secretKey) {
+    public EncryptionService(@Value("${encryption.secret-key}") String secretKey) {
         this.key = new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "AES");
     }
 

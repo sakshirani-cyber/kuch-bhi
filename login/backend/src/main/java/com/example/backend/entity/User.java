@@ -2,20 +2,34 @@ package com.example.backend.entity;
 
 import com.example.backend.enums.Gender;
 import java.time.LocalDate;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Period;
 
+// Entity representing a user in the database
+
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class User {
 
 	@Id
@@ -56,21 +70,6 @@ public class User {
 	private String schoolName;
 
 	private String currentCompany;
-
-	public User(String username, String firstName, String lastName, String email, Gender gender, String password, String contactNumber, LocalDate dob, String address, String collegeName, String schoolName, String currentCompany) {
-		this.username = username;
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.email = email;
-		this.gender = gender;
-		this.password = password;
-		this.contactNumber = contactNumber;
-		this.dob = dob;
-		this.address = address;
-		this.collegeName = collegeName;
-		this.schoolName = schoolName;
-		this.currentCompany = currentCompany;
-	}
 
 	public Integer getAge() {
 		if (this.dob == null) {

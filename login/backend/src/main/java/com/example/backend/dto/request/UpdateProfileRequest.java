@@ -19,9 +19,6 @@ import java.time.LocalDate;
 @AllArgsConstructor
 public class UpdateProfileRequest {
 
-    @NotBlank(message = "Username or email is required")
-    private String identifier;
-
     @NotBlank(message = "Password is required to confirm update")
     private String password;
 
@@ -31,8 +28,8 @@ public class UpdateProfileRequest {
     private String firstName;
 
     @Size(max = 50, message = "Last name cannot exceed 50 characters")
-    @Pattern(regexp = "^[A-Za-zÀ-ÿ' -]+$", message = "Last name must contain only letters and spaces")
-    private String lastName;
+	@Pattern(regexp = "^[A-Za-zÀ-ÿ' -]*$", message = "Last name must contain only letters and spaces")
+	private String lastName;
 
     @NotNull(message = "Gender is required")
     private Gender gender;
