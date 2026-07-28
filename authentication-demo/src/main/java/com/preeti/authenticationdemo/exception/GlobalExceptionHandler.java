@@ -42,8 +42,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
     }
 
-    @ExceptionHandler(DuplicateKeyException.class)
-    public ResponseEntity<ErrorResponse> handleDuplicateKey(DuplicateKeyException exception) {
+    @ExceptionHandler({DuplicateKeyException.class, org.springframework.dao.DataIntegrityViolationException.class})
+    public ResponseEntity<ErrorResponse> handleDuplicateKey(Exception exception) {
         log.warn("Database unique constraint violation: {}", exception.getMessage());
         ErrorResponse response = ErrorResponse.of(
                 HttpStatus.CONFLICT.value(),

@@ -20,6 +20,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -41,6 +42,7 @@ public class AuthService {
         this.mongoTemplate = mongoTemplate;
     }
 
+    @Transactional
     public String signup(SignupRequest request) {
         String username = request.getUsername().trim();
         String email = normalizeEmail(request.getEmail());
@@ -91,6 +93,7 @@ public class AuthService {
         return "Login successful";
     }
 
+    @Transactional
     @CacheEvict(value = "users", key = "#request.currentUsername")
     public String updateUsername(UpdateUsernameRequest request) {
         User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
@@ -105,6 +108,7 @@ public class AuthService {
         return "Username updated successfully";
     }
 
+    @Transactional
     @CacheEvict(value = "users", key = "#request.currentUsername")
     public String updatePassword(UpdatePasswordRequest request) {
         User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
@@ -116,6 +120,7 @@ public class AuthService {
         return "Password updated successfully";
     }
 
+    @Transactional
     @CacheEvict(value = "users", key = "#request.currentUsername")
     public String updateEmail(UpdateEmailRequest request) {
         User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
@@ -130,6 +135,7 @@ public class AuthService {
         return "Email updated successfully";
     }
 
+    @Transactional
     @CacheEvict(value = "users", key = "#request.currentUsername")
     public String updatePhoneNumber(UpdatePhoneNumberRequest request) {
         User currentUser = verifyIdentityOrThrow(request.getCurrentUsername(), request.getCurrentPassword());
@@ -144,6 +150,7 @@ public class AuthService {
         return "Phone number updated successfully";
     }
 
+    @Transactional
     @CacheEvict(value = "users", key = "#request.username")
     public String deleteUser(DeleteUserRequest request) {
         User currentUser = verifyIdentityOrThrow(request.getUsername(), request.getPassword());
