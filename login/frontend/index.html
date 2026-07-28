@@ -23,11 +23,11 @@
 
       <form id="login-form" onsubmit="handleLogin(event)">
         <div class="form-group">
-          <label for="login-identifier">Username or Email</label>
+          <label for="login-identifier">Username or Email <span class="required-star">*</span></label>
           <input id="login-identifier" type="text" placeholder="username or email" autocomplete="username" required />
         </div>
         <div class="form-group">
-          <label for="login-password">Password</label>
+          <label for="login-password">Password <span class="required-star">*</span></label>
           <input id="login-password" type="password" placeholder="password" autocomplete="current-password" required />
         </div>
         <button id="login-btn" class="btn btn-primary" type="submit">
@@ -51,19 +51,23 @@
       <form id="signup-form" onsubmit="handleSignup(event)">
         <div class="profile-grid" style="margin-bottom: 24px;">
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-username">Username</label>
+            <label for="signup-username">Username <span class="required-star">*</span></label>
             <input id="signup-username" type="text" placeholder="username" autocomplete="username" required />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-email">Email</label>
+            <label for="signup-email">Email <span class="required-star">*</span></label>
             <input id="signup-email" type="email" placeholder="email" autocomplete="email" required />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-password">Password</label>
+            <label for="signup-password">Password <span class="required-star">*</span></label>
             <input id="signup-password" type="password" placeholder="password" autocomplete="new-password" required />
           </div>
+		  <div class="form-group" style="margin-bottom: 0;">
+            <label for="signup-confirmPassword">Confirm Password <span class="required-star">*</span></label>
+            <input id="signup-confirmPassword" type="password" placeholder="confirm password" autocomplete="new-password" required />
+          </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-gender">Gender</label>
+            <label for="signup-gender">Gender <span class="required-star">*</span></label>
             <select id="signup-gender" required>
               <option value="" disabled selected>Select Gender</option>
               <option value="MALE">Male</option>
@@ -72,7 +76,7 @@
             </select>
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-firstName">First Name</label>
+            <label for="signup-firstName">First Name <span class="required-star">*</span></label>
             <input id="signup-firstName" type="text" placeholder="First name" required />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
@@ -80,12 +84,12 @@
             <input id="signup-lastName" type="text" placeholder="Last name" />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-contact">Contact Number</label>
-            <input id="signup-contact" type="text" placeholder="+1 234 567 8900" />
+            <label for="signup-contact">Contact Number <span class="required-star">*</span></label>
+            <input id="signup-contact" type="text" placeholder="+1 234 567 8900" required />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
-            <label for="signup-dob">Date of Birth</label>
-            <input id="signup-dob" type="date" />
+            <label for="signup-dob">Date of Birth <span class="required-star">*</span></label>
+            <input id="signup-dob" type="date" required />
           </div>
           <div class="form-group" style="margin-bottom: 0;">
             <label for="signup-address">Address</label>
@@ -184,28 +188,28 @@
       <form id="edit-profile-form" onsubmit="handleUpdateProfile(event)">
         <div class="profile-grid" style="margin-bottom: 24px;">
 			 <div class="form-group" style="margin-bottom: 0;">
-                <label for="edit-firstName">First Name</label>
-                <input id="edit-firstName" type="text" />
+                <label for="edit-firstName">First Name <span class="required-star">*</span></label>
+                <input id="edit-firstName" type="text" required />
             </div>
 			<div class="form-group" style="margin-bottom: 0;">
                 <label for="edit-lastName">Last Name</label>
                 <input id="edit-lastName" type="text" />
             </div>
 			<div class="form-group" style="margin-bottom: 0;">
-                <label for="edit-gender">Gender</label>
-                <select id="edit-gender">
+                <label for="edit-gender">Gender <span class="required-star">*</span></label>
+                <select id="edit-gender" required>
                     <option value="MALE">Male</option>
                     <option value="FEMALE">Female</option>
                     <option value="OTHER">Other</option>
                 </select>
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label for="edit-contact">Contact Number</label>
-                <input id="edit-contact" type="text" />
+                <label for="edit-contact">Contact Number <span class="required-star">*</span></label>
+                <input id="edit-contact" type="text" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
-                <label for="edit-dob">Date of Birth</label>
-                <input id="edit-dob" type="date" />
+                <label for="edit-dob">Date of Birth <span class="required-star">*</span></label>
+                <input id="edit-dob" type="date" required />
             </div>
             <div class="form-group" style="margin-bottom: 0;">
                 <label for="edit-address">Address</label>
@@ -245,13 +249,13 @@
         <div id="modal-alert" class="alert"></div>
 
         <div class="form-group">
-            <label for="modal-password">Password</label>
-            <input id="modal-password" type="password" placeholder="Enter password" />
+            <label for="modal-password">Password <span class="required-star">*</span></label>
+            <input id="modal-password" type="password" placeholder="Enter password" required />
         </div>
 
         <div class="modal-actions">
             <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="proceedToEditProfile()">Verify</button>
+            <button class="btn btn-primary" onclick="proceedToEditProfile()">Continue</button>
         </div>
     </div>
 </div>

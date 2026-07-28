@@ -1,6 +1,22 @@
 const API = 'http://localhost:8080/api/auth';
 let currentUser = null;
 
+function getToken() { return localStorage.getItem('accessToken'); }
+function setToken(t) { localStorage.setItem('accessToken', t); }
+function clearToken() { 
+    localStorage.removeItem('accessToken'); 
+    localStorage.removeItem('currentUser');
+    currentUser = null;
+}
+function saveUser(u) {
+    currentUser = u;
+    if (u) {
+        localStorage.setItem('currentUser', JSON.stringify(u));
+    } else {
+        localStorage.removeItem('currentUser');
+    }
+}
+
 // UI Helpers
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -18,7 +34,20 @@ function showScreen(id) {
 
 function showAlert(id, message, type = 'error') {
     const el = document.getElementById(id);
-    el.textContent = message;
+    if (typeof message === 'object' && message !== null) {
+        const errorList = Object.values(message);
+        if (errorList.length > 1) {
+            el.innerHTML = '<ul style="margin: 0; padding-left: 18px; text-align: left;">' + 
+                           errorList.map(err => `<li>${err}</li>`).join('') + 
+                           '</ul>';
+        } else if (errorList.length === 1) {
+            el.textContent = errorList[0];
+        } else {
+            el.textContent = 'Validation failed.';
+        }
+    } else {
+        el.textContent = message;
+    }
     el.className = `alert alert-${type} show`;
 }
 
@@ -26,6 +55,7 @@ function clearAlerts() {
     document.querySelectorAll('.alert').forEach(el => {
         el.className = 'alert';
         el.textContent = '';
+        el.innerHTML = '';
     });
 }
 
@@ -50,10 +80,10 @@ async function handleLogin(e) {
             body: JSON.stringify({ identifier, password })
         });
         const data = await res.json();
-		//console.log(data);
 
         if (res.ok && data.success) {
-            currentUser = data.user;
+            saveUser(data.user);
+            if (data.accessToken) setToken(data.accessToken);
             populateDashboard();
             showScreen('screen-dashboard');
         } else if (res.status === 404) {
@@ -63,10 +93,11 @@ async function handleLogin(e) {
                 document.getElementById('signup-username').value = identifier;
             }, 1500);
         } else {
-            showAlert('login-alert', data.message || 'Incorrect credentials.');
+            const errPayload = data.errors || data.message || 'Incorrect credentials.';
+            showAlert('login-alert', errPayload);
         }
     } catch {
-        showAlert('login-alert', 'Cannot reach server. Is the backend running?');
+        showAlert('login-alert', 'Cannot reach server.');
     } finally {
         setLoading('login-btn', false);
     }
@@ -80,6 +111,11 @@ async function handleSignup(e) {
 	const gender = document.getElementById('signup-gender').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
+	const confirmPassword = document.getElementById('signup-confirmPassword').value;
+	if (password !== confirmPassword) {
+		showAlert('signup-alert', 'Password and confirm password do not match');
+		return;
+	}
     const contactNumber = document.getElementById('signup-contact').value.trim();
     const dob = document.getElementById('signup-dob').value;
     const address = document.getElementById('signup-address').value.trim();
@@ -92,22 +128,23 @@ async function handleSignup(e) {
         const res = await fetch(`${API}/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, firstName, lastName, gender, email, password, contactNumber, dob, address, collegeName, schoolName, currentCompany })
+            body: JSON.stringify({ username, firstName, lastName, gender, email, password, confirmPassword, contactNumber, dob, address, collegeName, schoolName, currentCompany })
         });
         const data = await res.json();
-		//console.log(data);
 
         if (res.ok && data.success) {
+            if (data.accessToken) setToken(data.accessToken);
             showAlert('signup-alert', 'Account created. Redirecting to sign in...', 'success');
             setTimeout(() => {
                 showScreen('screen-login');
                 document.getElementById('login-identifier').value = username;
             }, 1500);
         } else {
-            showAlert('signup-alert', data.message || 'Something went wrong.');
+            const errPayload = data.errors || data.message || 'Something went wrong.';
+            showAlert('signup-alert', errPayload);
         }
     } catch {
-        showAlert('signup-alert', 'Cannot reach server. Is the backend running?');
+        showAlert('signup-alert', 'Cannot reach server.');
     } finally {
         setLoading('signup-btn', false);
     }
@@ -132,7 +169,7 @@ function populateDashboard() {
 }
 
 function handleLogout() {
-    currentUser = null;
+    clearToken();
     showScreen('screen-login');
     document.getElementById('login-form').reset();
     document.getElementById('signup-form').reset();
@@ -193,9 +230,11 @@ async function handleUpdateProfile(e) {
     try {
         const res = await fetch(`${API}/update-profile`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`
+            },
             body: JSON.stringify({ 
-                identifier: currentUser.username, 
                 password: window.tempPassword,
                 firstName, lastName, gender, contactNumber, dob, address, collegeName, schoolName, currentCompany 
             })
@@ -204,13 +243,13 @@ async function handleUpdateProfile(e) {
         const data = await res.json();
         
         if (res.ok && data.success) {
-            currentUser = data.user;
+            saveUser(data.user);
             populateDashboard();
             showScreen('screen-dashboard');
             window.tempPassword = null;
         } else {
-            const errorMsg = data.errors ? Object.values(data.errors).join(' | ') : (data.message || 'Failed to update profile.');
-            showAlert('edit-alert', errorMsg);
+            const errPayload = data.errors || data.message || 'Failed to update profile.';
+            showAlert('edit-alert', errPayload);
             if (res.status === 401) {
                 // Password was wrong
                 setTimeout(() => {
@@ -226,3 +265,18 @@ async function handleUpdateProfile(e) {
         setLoading('edit-save-btn', false);
     }
 }
+
+// Restore session on load
+document.addEventListener('DOMContentLoaded', () => {
+    const token = getToken();
+    const userStr = localStorage.getItem('currentUser');
+    if (token && userStr) {
+        try {
+            currentUser = JSON.parse(userStr);
+            populateDashboard();
+            showScreen('screen-dashboard');
+        } catch {
+            clearToken();
+        }
+    }
+});

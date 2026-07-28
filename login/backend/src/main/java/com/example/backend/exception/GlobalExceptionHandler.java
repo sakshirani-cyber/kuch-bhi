@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.util.HashMap;
 import java.util.Map;
 
+// Centralized exception handler to return appropriate error responses to the client
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

@@ -2,12 +2,11 @@ const userEmail = localStorage.getItem("userEmail");
 const message = document.getElementById("message");
 const deleteBtn = document.getElementById("deleteAccountBtn");
 
-if (!userEmail) {
-    window.location.href = "login.html";
+if (!requireAuth()) {
+    // redirect handled by requireAuth
+} else {
+    loadUser();
 }
-
-loadUser();
-
 async function loadUser() {
     try {
         const { user } = await getUserByEmail(userEmail);

@@ -2,6 +2,7 @@ package com.example.AuthProject.service;
 
 import com.example.AuthProject.cache.UserCacheService;
 import com.example.AuthProject.dto.ApiResponse;
+import com.example.AuthProject.dto.AuthResponse;
 import com.example.AuthProject.dto.DeleteUserRequest;
 import com.example.AuthProject.dto.LoginRequest;
 import com.example.AuthProject.dto.RegisterRequest;
@@ -11,9 +12,12 @@ import com.example.AuthProject.dto.UserResponse;
 import com.example.AuthProject.entity.User;
 import com.example.AuthProject.exception.ApiException;
 import com.example.AuthProject.repository.UserRepository;
+import com.example.AuthProject.security.JwtService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,15 +33,18 @@ public class AuthService {
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final UserCacheService userCacheService;
+    private final JwtService jwtService;
 
     public AuthService(
             UserRepository repository,
             PasswordEncoder passwordEncoder,
-            UserCacheService userCacheService
+            UserCacheService userCacheService,
+            JwtService jwtService
     ) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.userCacheService = userCacheService;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -68,7 +75,7 @@ public class AuthService {
         return ApiResponse.success(HttpStatus.CREATED, "User registered successfully!");
     }
 
-    public ApiResponse<UserResponse> login(LoginRequest request) {
+    public ApiResponse<AuthResponse> login(LoginRequest request) {
         log.info("Login attempt for email={}", request.getEmail());
 
         Optional<User> optionalUser = repository.findByEmail(request.getEmail());
@@ -95,11 +102,19 @@ public class AuthService {
         UserResponse userResponse = UserResponse.from(user);
         userCacheService.put(userResponse);
 
+        String token = jwtService.generateToken(user.getEmail());
+        AuthResponse authResponse = AuthResponse.builder()
+                .token(token)
+                .tokenType("Bearer")
+                .user(userResponse)
+                .build();
+
         log.info("Login successful userId={} email={}", user.getUserId(), user.getEmail());
-        return ApiResponse.success(HttpStatus.OK, "Login successful", userResponse);
+        return ApiResponse.success(HttpStatus.OK, "Login successful", authResponse);
     }
 
     public ApiResponse<UserResponse> getUser(String email) {
+        assertSelf(email);
         log.info("Fetching user details email={}", email);
 
         Optional<UserResponse> cached = userCacheService.getByEmail(email);
@@ -122,6 +137,7 @@ public class AuthService {
 
     @Transactional
     public ApiResponse<Void> updatePassword(String email, UpdatePasswordRequest request) {
+        assertSelf(email);
         log.info("Password update attempt email={}", email);
 
         User user = repository.findUserDetailsByEmail(email)
@@ -167,6 +183,7 @@ public class AuthService {
 
     @Transactional
     public ApiResponse<Void> updateUsername(String email, UpdateUsernameRequest request) {
+        assertSelf(email);
         log.info("Username update attempt email={}", email);
 
         User user = repository.findUserDetailsByEmail(email)
@@ -213,6 +230,7 @@ public class AuthService {
 
     @Transactional
     public ApiResponse<Void> deleteUser(String email, DeleteUserRequest request) {
+        assertSelf(email);
         log.info("Delete user attempt email={}", email);
 
         User user = repository.findUserDetailsByEmail(email)
@@ -244,5 +262,31 @@ public class AuthService {
 
         log.info("User deleted successfully email={}", email);
         return ApiResponse.success(HttpStatus.OK, "User deleted successfully!");
+    }
+
+    private void assertSelf(String email) {
+        String authenticatedEmail = currentEmail();
+        if (authenticatedEmail == null || !authenticatedEmail.equalsIgnoreCase(email)) {
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "Access denied",
+                    Map.of("auth", "You can only access your own account")
+            );
+        }
+    }
+
+    private String currentEmail() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
+            return userDetails.getUsername();
+        }
+        if (principal instanceof String name && !"anonymousUser".equals(name)) {
+            return name;
+        }
+        return null;
     }
 }

@@ -1,3 +1,9 @@
+const urlParams = new URLSearchParams(window.location.search);
+const urlUsername = urlParams.get('username');
+if (urlUsername) {
+  sessionStorage.setItem('username', urlUsername);
+}
+
 const storedUsername = sessionStorage.getItem('username');
 if (!storedUsername) {
   window.location.href = 'index.html';

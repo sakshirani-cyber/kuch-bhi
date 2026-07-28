@@ -38,4 +38,17 @@ public class User implements Serializable {
 
     private Integer age;
 
+    private boolean isVerified = false;
+
+    public User(String id, String username, String password, String email, String phoneNumber, LocalDate dateOfBirth, Integer age) {
+        this.id = id;
+        this.username = username;
+        this.password = password;
+        this.email = email;
+        this.phoneNumber = phoneNumber;
+        this.dateOfBirth = dateOfBirth;
+        this.age = age;
+        this.isVerified = false;
+    }
+
 }

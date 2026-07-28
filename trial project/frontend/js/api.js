@@ -237,6 +237,18 @@ async function parseResponse(response) {
         }
     }
 
+    if (response.status === 401) {
+        clearSession();
+        if (!window.location.pathname.endsWith("login.html")
+            && !window.location.pathname.endsWith("signup.html")) {
+            window.location.href = "login.html";
+        }
+        throw new ApiError(
+            (data && data.message) || "Authentication required",
+            (data && data.errors) || { auth: "Please log in again" }
+        );
+    }
+
     if (!response.ok) {
         throw new ApiError(
             (data && data.message) || "Request failed",
@@ -249,19 +261,58 @@ async function parseResponse(response) {
 
 /**
  * Supports ApiResponse envelope ({ status, message, errors, data })
- * and legacy flat UserResponse ({ userId, userName, userEmail, ... }).
+ * and AuthResponse ({ token, user }) / UserResponse payloads.
  */
 function unwrapUser(response) {
     if (!response || typeof response !== "object") {
         return null;
     }
-    if (response.data && typeof response.data === "object") {
-        return response.data;
+
+    const payload = response.data && typeof response.data === "object"
+        ? response.data
+        : response;
+
+    if (payload.user && typeof payload.user === "object") {
+        return payload.user;
     }
-    if (response.userId != null || response.userEmail) {
-        return response;
+    if (payload.userId != null || payload.userEmail) {
+        return payload;
     }
     return null;
+}
+
+function unwrapToken(response) {
+    if (!response || typeof response !== "object") {
+        return null;
+    }
+    const payload = response.data && typeof response.data === "object"
+        ? response.data
+        : response;
+    return payload.token || null;
+}
+
+function getToken() {
+    return localStorage.getItem("token");
+}
+
+function requireAuth() {
+    if (!getToken() || !localStorage.getItem("userEmail")) {
+        window.location.href = "login.html";
+        return false;
+    }
+    return true;
+}
+
+function authHeaders(includeJson = true) {
+    const headers = {};
+    if (includeJson) {
+        headers["Content-Type"] = "application/json";
+    }
+    const token = getToken();
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+    return headers;
 }
 
 async function signup(user) {
@@ -286,7 +337,15 @@ async function login(user) {
     });
 
     const envelope = await parseResponse(response);
+    const token = unwrapToken(envelope);
     const userData = unwrapUser(envelope);
+
+    if (!token) {
+        throw new ApiError(
+            (envelope && envelope.message) || "Login response missing token",
+            { token: "JWT token not found in login response" }
+        );
+    }
     if (!userData || userData.userId == null) {
         throw new ApiError(
             (envelope && envelope.message) || "Login response missing user details",
@@ -295,11 +354,13 @@ async function login(user) {
                 : { userId: "User id not found in login response" }
         );
     }
-    return { envelope: envelope, user: userData };
+    return { envelope: envelope, token: token, user: userData };
 }
 
 async function getUserByEmail(email) {
-    const response = await fetch(`${BASE_URL}/user/${encodeURIComponent(email)}`);
+    const response = await fetch(`${BASE_URL}/user/${encodeURIComponent(email)}`, {
+        headers: authHeaders(false)
+    });
     const envelope = await parseResponse(response);
     const userData = unwrapUser(envelope);
     if (!userData || userData.userId == null) {
@@ -316,9 +377,7 @@ async function getUserByEmail(email) {
 async function updateUsername(email, currentUsername, newUsername) {
     const response = await fetch(`${BASE_URL}/update-username/${encodeURIComponent(email)}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
             currentUsername: currentUsername,
             newUsername: newUsername
@@ -331,9 +390,7 @@ async function updateUsername(email, currentUsername, newUsername) {
 async function updatePassword(email, currentPassword, newPassword) {
     const response = await fetch(`${BASE_URL}/update-password/${encodeURIComponent(email)}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
             currentPassword: currentPassword,
             newPassword: newPassword
@@ -346,9 +403,7 @@ async function updatePassword(email, currentPassword, newPassword) {
 async function deleteUser(email, password) {
     const response = await fetch(`${BASE_URL}/delete-user/${encodeURIComponent(email)}`, {
         method: "DELETE",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: authHeaders(),
         body: JSON.stringify({
             password: password
         })
@@ -358,13 +413,12 @@ async function deleteUser(email, password) {
 }
 
 function logout() {
-    localStorage.removeItem("userId");
-    localStorage.removeItem("userName");
-    localStorage.removeItem("userEmail");
+    clearSession();
     window.location.href = "login.html";
 }
 
 function clearSession() {
+    localStorage.removeItem("token");
     localStorage.removeItem("userId");
     localStorage.removeItem("userName");
     localStorage.removeItem("userEmail");

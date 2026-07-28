@@ -7,8 +7,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class AuthProject {
 
-	public static void main(String[] args) {
+	static {
+		// Runs for both `main` and @SpringBootTest (tests do not call main()).
 		loadEnvFile();
+	}
+
+	public static void main(String[] args) {
 		SpringApplication.run(AuthProject.class, args);
 	}
 
@@ -17,7 +21,7 @@ public class AuthProject {
 	 * so placeholders like ${DB_URL} in application.properties resolve.
 	 * Existing OS env vars / system properties take precedence.
 	 */
-	private static void loadEnvFile() {
+	static void loadEnvFile() {
 		Dotenv dotenv = Dotenv.configure()
 				.directory(System.getProperty("user.dir"))
 				.ignoreIfMissing()

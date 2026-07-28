@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Profile</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Edit Profile</h1>
+
+    <p id="message" class="message" hidden></p>
+    <p id="error" class="error" hidden></p>
+
+    <form id="editProfileForm" hidden>
+        <label for="firstName">First Name <span class="required">*</span></label>
+        <input type="text" id="firstName" name="firstName" required>
+
+        <label for="lastName">Last Name</label>
+        <input type="text" id="lastName" name="lastName">
+
+        <label for="dob">Date of Birth <span class="required">*</span></label>
+        <input type="date" id="dob" name="dob" required>
+
+        <label for="gender">Gender <span class="required">*</span></label>
+        <select id="gender" name="gender" required>
+            <option value="MALE">Male</option>
+            <option value="FEMALE">Female</option>
+            <option value="OTHER">Other</option>
+        </select>
+
+        <label for="phoneNumber">Phone Number <span class="required">*</span></label>
+        <input type="text" id="phoneNumber" name="phoneNumber" required>
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <a class="btn" id="backLink" href="#">Back</a>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/validation.js"></script>
+<script>
+    const userId = resolveAuthenticatedUserId();
+
+    if (!userId) {
+        throw new Error('Missing user id');
+    }
+
+    document.getElementById('backLink').href = `/profile.html?id=${userId}`;
+
+    async function loadProfile() {
+        try {
+            const user = await apiRequest(`/api/users/${userId}`);
+
+            document.getElementById('firstName').value = user.firstName;
+            document.getElementById('lastName').value = user.lastName;
+            document.getElementById('dob').value = user.dob;
+            document.getElementById('gender').value = user.gender;
+            document.getElementById('phoneNumber').value = user.phoneNumber;
+            document.getElementById('editProfileForm').hidden = false;
+        } catch (error) {
+            showMessage('error', formatError(error), true);
+        }
+    }
+
+    document.getElementById('editProfileForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        showMessage('message', '');
+        showMessage('error', '', true);
+
+        const payload = {
+            firstName: document.getElementById('firstName').value.trim(),
+            lastName: document.getElementById('lastName').value.trim(),
+            dob: document.getElementById('dob').value,
+            gender: document.getElementById('gender').value,
+            phoneNumber: document.getElementById('phoneNumber').value.trim()
+        };
+
+        const validationError = validateUpdateProfileForm(payload);
+        if (validationError) {
+            showMessage('error', validationError, true);
+            return;
+        }
+
+        try {
+            await apiRequest(`/api/users/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+
+            showMessage('message', 'Profile updated successfully.');
+            setTimeout(() => {
+                window.location.href = `/profile.html?id=${userId}`;
+            }, 800);
+        } catch (error) {
+            showMessage('error', formatError(error), true);
+        }
+    });
+
+    loadProfile();
+</script>
+
+</body>
+</html>

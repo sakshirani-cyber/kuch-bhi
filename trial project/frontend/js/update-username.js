@@ -3,14 +3,14 @@ const message = document.getElementById("message");
 const button = document.getElementById("updateBtn");
 const userEmail = localStorage.getItem("userEmail");
 
-if (!userEmail) {
-    window.location.href = "login.html";
-}
-
-const currentUsernameInput = document.getElementById("currentUsername");
-const savedUsername = localStorage.getItem("userName");
-if (savedUsername) {
-    currentUsernameInput.value = savedUsername;
+if (!requireAuth()) {
+    // redirect handled by requireAuth
+} else {
+    const currentUsernameInput = document.getElementById("currentUsername");
+    const savedUsername = localStorage.getItem("userName");
+    if (savedUsername) {
+        currentUsernameInput.value = savedUsername;
+    }
 }
 
 const refreshSubmitState = bindValidatedSubmit(form, button, [

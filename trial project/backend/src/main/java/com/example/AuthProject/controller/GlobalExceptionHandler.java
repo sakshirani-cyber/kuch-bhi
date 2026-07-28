@@ -4,6 +4,8 @@ import com.example.AuthProject.dto.ApiResponse;
 import com.example.AuthProject.exception.ApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -34,6 +36,30 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ex.getStatus())
                 .body(ApiResponse.failure(ex.getStatus(), ex.getMessage(), ex.getErrors()));
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.failure(
+                        HttpStatus.FORBIDDEN,
+                        "Access denied",
+                        Map.of("auth", "You do not have permission to perform this action")
+                ));
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleAuthentication(AuthenticationException ex) {
+        log.warn("Authentication failed: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.failure(
+                        HttpStatus.UNAUTHORIZED,
+                        "Authentication required",
+                        Map.of("auth", "Valid JWT token is required")
+                ));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
