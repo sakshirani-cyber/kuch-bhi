@@ -36,6 +36,9 @@
     if (params.get('signup') === 'success') {
         showMessage('message', 'Signup successful. Please login.');
     }
+    if (params.get('verified') === 'success') {
+        showMessage('message', 'Email verified successfully. Please login.');
+    }
 
     document.getElementById('loginForm').addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -56,6 +59,10 @@
             setUserId(response.userId);
             window.location.href = '/home.html';
         } catch (error) {
+            if (error.status === 403) {
+                showMessage('error', 'Email not verified. Please verify OTP.', true);
+                return;
+            }
             showMessage('error', formatError(error), true);
         }
     });

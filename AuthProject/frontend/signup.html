@@ -79,8 +79,8 @@
                 body: JSON.stringify(payload)
             });
 
-            setUserId(response.userId);
-            window.location.href = '/home.html';
+            sessionStorage.setItem('pendingEmail', payload.email.trim().toLowerCase());
+            window.location.href = '/verify-otp.html';
         } catch (error) {
             showMessage('error', formatError(error), true);
         }
