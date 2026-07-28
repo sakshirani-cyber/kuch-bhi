@@ -29,16 +29,21 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final EncryptionService encryptionService;
     private final PhoneHashService phoneHashService;
+    private final UserProfileCacheService userProfileCacheService;
 
     public UserResponse getUser(Long id) {
         log.debug("Attempting to retrieve user details for ID: {}", id);
-        User user = repository.findById(id)
-                .orElseThrow(() -> {
-                    log.warn("User retrieval failed: User ID {} not found", id);
-                    return new ResourceNotFoundException("User not found.");
-                });
 
-        return toResponse(user);
+        return userProfileCacheService.getCachedUser(id)
+                .orElseGet(() -> loadAndCacheUser(id));
+    }
+
+    /**
+     * Builds a profile response and stores it in Memcached after successful login.
+     */
+    public void warmProfileCache(User user) {
+        UserResponse response = toResponse(user);
+        userProfileCacheService.cacheUser(response);
     }
 
     @Transactional
@@ -68,7 +73,9 @@ public class UserService {
         user.setPhoneNumberHash(newPhoneHash);
 
         log.info("Successfully updated user profile for ID: {}", id);
-        return toResponse(user);
+        UserResponse response = toResponse(user);
+        userProfileCacheService.evictUser(id);
+        return response;
     }
 
     @Transactional
@@ -100,6 +107,32 @@ public class UserService {
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         log.info("Successfully changed password for user ID: {}", id);
+    }
+
+    @Transactional
+    public void deleteUser(Long id) {
+        log.debug("Attempting to delete user ID: {}", id);
+        User user = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("User delete failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
+
+        repository.delete(user);
+        userProfileCacheService.evictUser(id);
+        log.info("Successfully deleted user ID: {}", id);
+    }
+
+    private UserResponse loadAndCacheUser(Long id) {
+        User user = repository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("User retrieval failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
+
+        UserResponse response = toResponse(user);
+        userProfileCacheService.cacheUser(response);
+        return response;
     }
 
     private UserResponse toResponse(User user) {

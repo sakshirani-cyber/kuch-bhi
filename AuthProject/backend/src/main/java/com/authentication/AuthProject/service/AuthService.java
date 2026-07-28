@@ -1,11 +1,14 @@
 package com.authentication.AuthProject.service;
 
 import com.authentication.AuthProject.dto.request.LoginRequest;
+import com.authentication.AuthProject.dto.request.ResendOtpRequest;
 import com.authentication.AuthProject.dto.request.SignupRequest;
+import com.authentication.AuthProject.dto.request.VerifyOtpRequest;
 import com.authentication.AuthProject.dto.response.AuthResponse;
 import com.authentication.AuthProject.entity.User;
 import com.authentication.AuthProject.exception.DuplicateResourceException;
 import com.authentication.AuthProject.exception.InvalidCredentialsException;
+import com.authentication.AuthProject.exception.UnverifiedUserException;
 import com.authentication.AuthProject.repository.UserRepository;
 import com.authentication.AuthProject.util.EncryptionService;
 import com.authentication.AuthProject.util.PhoneHashService;
@@ -23,11 +26,14 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EncryptionService encryptionService;
     private final PhoneHashService phoneHashService;
+    private final OtpService otpService;
+    private final UserService userService;
 
     public AuthResponse signup(SignupRequest request) {
-        log.debug("Checking duplicate email registration for: {}", request.getEmail());
-        if (repository.existsByEmail(request.getEmail())) {
-            log.warn("Signup failed: Email {} is already registered.", request.getEmail());
+        String email = request.getEmail().trim().toLowerCase();
+        log.debug("Checking duplicate email registration for: {}", email);
+        if (repository.existsByEmail(email)) {
+            log.warn("Signup failed: Email {} is already registered.", email);
             throw new DuplicateResourceException("Email already registered.");
         }
 
@@ -45,39 +51,66 @@ public class AuthService {
                 .lastName(request.getLastName())
                 .dob(request.getDob())
                 .gender(request.getGender())
-                .email(request.getEmail())
+                .email(email)
                 .phoneNumber(encryptionService.encrypt(request.getPhoneNumber()))
                 .phoneNumberHash(phoneHash)
                 .password(passwordEncoder.encode(request.getPassword()))
+                .verified(false)
                 .build();
 
         User savedUser = repository.save(user);
         log.info("New user signed up successfully with ID: {}", savedUser.getId());
 
+        otpService.issueOtpForSignup(savedUser.getEmail());
+
         return AuthResponse.builder()
                 .userId(savedUser.getId())
-                .message("Signup Successful")
+                .message("Signup successful. Verify OTP sent to your email.")
                 .build();
     }
 
     public AuthResponse login(LoginRequest request) {
-        log.debug("Looking up user for login: {}", request.getEmail());
-        User user = repository.findByEmail(request.getEmail())
+        String email = request.getEmail().trim().toLowerCase();
+        log.debug("Looking up user for login: {}", email);
+        User user = repository.findByEmail(email)
                 .orElseThrow(() -> {
-                    log.warn("Login failed: User not found with email: {}", request.getEmail());
+                    log.warn("Login failed: User not found with email: {}", email);
                     return new InvalidCredentialsException("Invalid email or password.");
                 });
 
-        log.debug("Verifying password credentials for: {}", request.getEmail());
+        log.debug("Verifying password credentials for: {}", email);
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            log.warn("Login failed: Password mismatch for email: {}", request.getEmail());
+            log.warn("Login failed: Password mismatch for email: {}", email);
             throw new InvalidCredentialsException("Invalid email or password.");
         }
+
+        if (!user.isVerified()) {
+            log.warn("Login failed: Email not verified for: {}", email);
+            throw new UnverifiedUserException("Email not verified. Please verify OTP.");
+        }
+
+        userService.warmProfileCache(user);
 
         log.info("User login validated successfully for ID: {}", user.getId());
         return AuthResponse.builder()
                 .userId(user.getId())
                 .message("Login successful")
+                .build();
+    }
+
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        log.debug("Verifying OTP for email: {}", request.getEmail());
+        otpService.verifyOtp(request.getEmail(), request.getOtp());
+        return AuthResponse.builder()
+                .message("Email verified successfully.")
+                .build();
+    }
+
+    public AuthResponse resendOtp(ResendOtpRequest request) {
+        log.debug("Resending OTP for email: {}", request.getEmail());
+        otpService.resendOtp(request.getEmail());
+        return AuthResponse.builder()
+                .message("OTP sent to your email.")
                 .build();
     }
 }

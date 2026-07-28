@@ -49,6 +49,10 @@ public class User {
     @Column(nullable = false, length = 60)
     private String password;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean verified = false;
+
     @Column(nullable = false)
     private Integer age;
 
