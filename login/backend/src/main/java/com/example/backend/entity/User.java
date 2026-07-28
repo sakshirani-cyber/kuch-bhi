@@ -71,6 +71,10 @@ public class User {
 
 	private String currentCompany;
 
+	@Builder.Default
+	@Column(nullable = false)
+	private boolean isVerified = false;
+
 	public Integer getAge() {
 		if (this.dob == null) {
 			return 0;

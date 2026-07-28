@@ -1,5 +1,10 @@
 const API = 'http://localhost:8080/api/auth';
 let currentUser = null;
+let pendingOtpEmail = null;
+let otpTimerInterval = null;
+let otpTimeRemaining = 300;
+let otpTriesRemaining = 3;
+let isEmailVerified = false;
 
 function getToken() { return localStorage.getItem('accessToken'); }
 function setToken(t) { localStorage.setItem('accessToken', t); }
@@ -21,7 +26,9 @@ function saveUser(u) {
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     const screen = document.getElementById(id);
-    screen.classList.add('active');
+    if (screen) {
+        screen.classList.add('active');
+    }
     clearAlerts();
     
     const appEl = document.querySelector('.app');
@@ -34,6 +41,7 @@ function showScreen(id) {
 
 function showAlert(id, message, type = 'error') {
     const el = document.getElementById(id);
+    if (!el) return;
     if (typeof message === 'object' && message !== null) {
         const errorList = Object.values(message);
         if (errorList.length > 1) {
@@ -106,16 +114,18 @@ async function handleLogin(e) {
 async function handleSignup(e) {
     e.preventDefault();
     const username = document.getElementById('signup-username').value.trim();
-	const firstName = document.getElementById('signup-firstName').value.trim();
-	const lastName = document.getElementById('signup-lastName').value.trim();
-	const gender = document.getElementById('signup-gender').value.trim();
+    const firstName = document.getElementById('signup-firstName').value.trim();
+    const lastName = document.getElementById('signup-lastName').value.trim();
+    const gender = document.getElementById('signup-gender').value.trim();
     const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
-	const confirmPassword = document.getElementById('signup-confirmPassword').value;
-	if (password !== confirmPassword) {
-		showAlert('signup-alert', 'Password and confirm password do not match');
-		return;
-	}
+    const confirmPassword = document.getElementById('signup-confirmPassword').value;
+
+    if (password !== confirmPassword) {
+        showAlert('signup-alert', 'Password and confirm password do not match');
+        return;
+    }
+
     const contactNumber = document.getElementById('signup-contact').value.trim();
     const dob = document.getElementById('signup-dob').value;
     const address = document.getElementById('signup-address').value.trim();
@@ -123,6 +133,33 @@ async function handleSignup(e) {
     const schoolName = document.getElementById('signup-school').value.trim();
     const currentCompany = document.getElementById('signup-company').value.trim();
 
+    // Step 1: If email is not yet verified, request OTP and open verification dialogue
+    if (!isEmailVerified) {
+        setLoading('signup-btn', true);
+        try {
+            const res = await fetch(`${API}/send-otp`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            const data = await res.json();
+
+            if (res.ok && data.success) {
+                showAlert('signup-alert', 'OTP sent to your email! Please enter it in the verification popup.', 'info');
+                openOtpModal(email);
+            } else {
+                const errPayload = data.errors || data.message || 'Failed to send OTP.';
+                showAlert('signup-alert', errPayload);
+            }
+        } catch {
+            showAlert('signup-alert', 'Cannot reach server.');
+        } finally {
+            setLoading('signup-btn', false);
+        }
+        return;
+    }
+
+    // Step 2: Email is verified, submit final registration
     setLoading('signup-btn', true);
     try {
         const res = await fetch(`${API}/signup`, {
@@ -133,14 +170,13 @@ async function handleSignup(e) {
         const data = await res.json();
 
         if (res.ok && data.success) {
+            saveUser(data.user);
             if (data.accessToken) setToken(data.accessToken);
-            showAlert('signup-alert', 'Account created. Redirecting to sign in...', 'success');
-            setTimeout(() => {
-                showScreen('screen-login');
-                document.getElementById('login-identifier').value = username;
-            }, 1500);
+            populateDashboard();
+            showScreen('screen-dashboard');
+            resetSignupFormState();
         } else {
-            const errPayload = data.errors || data.message || 'Something went wrong.';
+            const errPayload = data.errors || data.message || 'Something went wrong during account creation.';
             showAlert('signup-alert', errPayload);
         }
     } catch {
@@ -150,14 +186,147 @@ async function handleSignup(e) {
     }
 }
 
+function resetSignupFormState() {
+    isEmailVerified = false;
+    document.getElementById('signup-form').reset();
+    document.getElementById('signup-email').readOnly = false;
+    document.getElementById('email-verified-badge').classList.remove('show');
+    document.getElementById('signup-btn-text').textContent = 'Verify Email';
+}
+
+// OTP Verification Modal Flow
+function openOtpModal(email) {
+    pendingOtpEmail = email;
+    otpTriesRemaining = 3;
+    
+    document.getElementById('otp-modal').classList.add('active');
+    document.getElementById('otp-target-email').textContent = email;
+    document.getElementById('otp-input').value = '';
+    document.getElementById('otp-tries-left').textContent = '3/3';
+    clearAlerts();
+
+    startOtpTimer(300); // 5 minutes
+}
+
+function closeOtpModal() {
+    document.getElementById('otp-modal').classList.remove('active');
+    if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+        otpTimerInterval = null;
+    }
+}
+
+function startOtpTimer(seconds) {
+    if (otpTimerInterval) {
+        clearInterval(otpTimerInterval);
+    }
+    otpTimeRemaining = seconds;
+    updateOtpTimerDisplay();
+
+    otpTimerInterval = setInterval(() => {
+        otpTimeRemaining--;
+        updateOtpTimerDisplay();
+        if (otpTimeRemaining <= 0) {
+            clearInterval(otpTimerInterval);
+            otpTimerInterval = null;
+            document.getElementById('otp-timer').textContent = 'Expired';
+            showAlert('otp-alert', 'OTP has expired. Please click Resend OTP.');
+        }
+    }, 1000);
+}
+
+function updateOtpTimerDisplay() {
+    const mins = Math.floor(Math.max(0, otpTimeRemaining) / 60);
+    const secs = Math.max(0, otpTimeRemaining) % 60;
+    const formatted = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    document.getElementById('otp-timer').textContent = formatted;
+}
+
+async function handleVerifyOtp() {
+    const otpInput = document.getElementById('otp-input').value.trim();
+    if (!otpInput || otpInput.length !== 6) {
+        showAlert('otp-alert', 'Please enter a valid 6-digit OTP code.');
+        return;
+    }
+
+    if (!pendingOtpEmail) {
+        showAlert('otp-alert', 'Missing email address for verification.');
+        return;
+    }
+
+    setLoading('verify-otp-btn', true);
+    try {
+        const res = await fetch(`${API}/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingOtpEmail, otp: otpInput })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            isEmailVerified = true;
+            closeOtpModal();
+
+            // Lock email input and update signup UI to "Create Account"
+            document.getElementById('signup-email').readOnly = true;
+            document.getElementById('email-verified-badge').classList.add('show');
+            document.getElementById('signup-btn-text').textContent = 'Create Account';
+
+            showAlert('signup-alert', 'Email verified successfully! Click Create Account to complete registration.', 'success');
+        } else {
+            const errPayload = data.errors || data.message || 'Invalid OTP code.';
+            if (otpTriesRemaining > 0) {
+                otpTriesRemaining--;
+            }
+            document.getElementById('otp-tries-left').textContent = `${otpTriesRemaining}/3`;
+            showAlert('otp-alert', errPayload);
+        }
+    } catch {
+        showAlert('otp-alert', 'Cannot reach server.');
+    } finally {
+        setLoading('verify-otp-btn', false);
+    }
+}
+
+async function handleResendOtp() {
+    if (!pendingOtpEmail) {
+        showAlert('otp-alert', 'Missing email address.');
+        return;
+    }
+
+    setLoading('resend-otp-btn', true);
+    try {
+        const res = await fetch(`${API}/resend-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: pendingOtpEmail })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+            otpTriesRemaining = 3;
+            document.getElementById('otp-tries-left').textContent = '3/3';
+            startOtpTimer(300);
+            showAlert('otp-alert', 'A new OTP has been sent to your email!', 'success');
+        } else {
+            const errPayload = data.errors || data.message || 'Failed to resend OTP.';
+            showAlert('otp-alert', errPayload);
+        }
+    } catch {
+        showAlert('otp-alert', 'Cannot reach server.');
+    } finally {
+        setLoading('resend-otp-btn', false);
+    }
+}
+
 // Dashboard
 function populateDashboard() {
     if (!currentUser) return;
     
     document.getElementById('dash-name').textContent = currentUser.username || '-';
-	document.getElementById('dash-firstname').textContent = currentUser.firstName || '-';
-	document.getElementById('dash-lastname').textContent = currentUser.lastName || '-';
-	document.getElementById('dash-gender').textContent = currentUser.gender || '-';
+    document.getElementById('dash-firstname').textContent = currentUser.firstName || '-';
+    document.getElementById('dash-lastname').textContent = currentUser.lastName || '-';
+    document.getElementById('dash-gender').textContent = currentUser.gender || '-';
     document.getElementById('dash-email').textContent = currentUser.email || '-';
     document.getElementById('dash-contact').textContent = currentUser.contactNumber || '-';
     document.getElementById('dash-dob').textContent = currentUser.dob || '-';
@@ -172,7 +341,7 @@ function handleLogout() {
     clearToken();
     showScreen('screen-login');
     document.getElementById('login-form').reset();
-    document.getElementById('signup-form').reset();
+    resetSignupFormState();
     document.getElementById('edit-profile-form').reset();
 }
 
@@ -194,11 +363,9 @@ function proceedToEditProfile() {
         return;
     }
     
-    // We store it temporarily to use in the update request
     window.tempPassword = pwd;
     closeEditModal();
     
-    // Pre-fill edit form
     document.getElementById('edit-firstName').value = currentUser.firstName || '';
     document.getElementById('edit-lastName').value = currentUser.lastName || '';
     document.getElementById('edit-gender').value = currentUser.gender || 'OTHER';
@@ -215,7 +382,7 @@ function proceedToEditProfile() {
 async function handleUpdateProfile(e) {
     e.preventDefault();
     
-	const firstName = document.getElementById('edit-firstName').value.trim();
+    const firstName = document.getElementById('edit-firstName').value.trim();
     const lastName = document.getElementById('edit-lastName').value.trim();
     const gender = document.getElementById('edit-gender').value;
     const contactNumber = document.getElementById('edit-contact').value.trim();
@@ -251,7 +418,6 @@ async function handleUpdateProfile(e) {
             const errPayload = data.errors || data.message || 'Failed to update profile.';
             showAlert('edit-alert', errPayload);
             if (res.status === 401) {
-                // Password was wrong
                 setTimeout(() => {
                     showScreen('screen-dashboard');
                     openEditModal();

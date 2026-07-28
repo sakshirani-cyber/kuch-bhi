@@ -1,8 +1,11 @@
 package com.example.backend.controller;
 
 import com.example.backend.dto.request.LoginRequest;
+import com.example.backend.dto.request.ResendOtpRequest;
+import com.example.backend.dto.request.SendOtpRequest;
 import com.example.backend.dto.request.SignupRequest;
 import com.example.backend.dto.request.UpdateProfileRequest;
+import com.example.backend.dto.request.VerifyOtpRequest;
 import com.example.backend.dto.response.AuthResponse;
 import com.example.backend.service.AuthService;
 import com.example.backend.service.UserService;
@@ -35,6 +38,24 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/send-otp")
+    public ResponseEntity<AuthResponse> sendOtp(@Valid @RequestBody SendOtpRequest request) {
+        AuthResponse response = authService.sendOtp(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        AuthResponse response = authService.verifyOtp(request);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<AuthResponse> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        AuthResponse response = authService.resendOtp(request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 

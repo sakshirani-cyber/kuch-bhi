@@ -31,7 +31,7 @@ public class SecurityConfig {
 		http.csrf(csrf -> csrf.disable())
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> auth
-				.requestMatchers("/api/auth/login", "/api/auth/signup").permitAll()
+				.requestMatchers("/api/auth/login", "/api/auth/signup", "/api/auth/send-otp", "/api/auth/verify-otp", "/api/auth/resend-otp").permitAll()
 				.requestMatchers("/h2-console/**").permitAll()
 				.requestMatchers("/api/auth/update-profile").authenticated()
 				.anyRequest().authenticated())

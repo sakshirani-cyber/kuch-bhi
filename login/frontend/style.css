@@ -53,6 +53,9 @@ h1 {
     margin-bottom: 32px;
 }
 
+.subtitle.mb-16 { margin-bottom: 16px; }
+.subtitle.mb-20 { margin-bottom: 20px; }
+
 .screen { display: none; animation: fadeIn 0.4s ease; }
 .screen.active { display: block; }
 
@@ -202,6 +205,14 @@ input::placeholder { color: #52525b; }
     margin-bottom: 32px;
 }
 
+.profile-grid.form-grid {
+    margin-bottom: 24px;
+}
+
+.profile-grid.form-grid .form-group {
+    margin-bottom: 0;
+}
+
 .profile-item {
     background: rgba(9, 9, 11, 0.3);
     padding: 16px;
@@ -245,6 +256,10 @@ input::placeholder { color: #52525b; }
     background: rgba(239, 68, 68, 0.1);
 }
 
+.mt-12 {
+    margin-top: 12px;
+}
+
 /* Modal */
 .modal-backdrop {
     position: fixed;
@@ -278,6 +293,42 @@ input::placeholder { color: #52525b; }
     margin-top: 24px;
 }
 
+.modal-actions.gap-8 {
+    gap: 8px;
+}
+
 .modal-actions .btn {
     margin-top: 0;
+}
+
+/* OTP Specifics */
+.otp-input {
+    text-align: center;
+    letter-spacing: 4px;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.otp-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    font-size: 0.85rem;
+    color: #a1a1aa;
+}
+
+.otp-info-value {
+    color: #fafafa;
+}
+
+.badge-verified {
+    display: none;
+    color: #86efac;
+    font-size: 0.8rem;
+    margin-left: 6px;
+    font-weight: 600;
+}
+.badge-verified.show {
+    display: inline;
 }
