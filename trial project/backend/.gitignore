@@ -3,7 +3,7 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
-backend/src/main/java/com/example/AuthProject/debug
+!**/src/main/**/debug/
 ### Secrets / local env ###
 .env
 .env.local
