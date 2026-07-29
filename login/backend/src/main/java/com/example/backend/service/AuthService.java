@@ -10,6 +10,7 @@ import com.example.backend.dto.request.VerifyOtpRequest;
 import com.example.backend.dto.response.AuthResponse;
 import com.example.backend.entity.User;
 import com.example.backend.exception.InvalidCredentialsException;
+import com.example.backend.exception.RateLimitExceededException;
 import com.example.backend.exception.ResourceNotFoundException;
 import com.example.backend.exception.UserAlreadyExistsException;
 import com.example.backend.mapper.UserMapper;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -35,6 +37,7 @@ public class AuthService {
     private final OtpService otpService;
     private final EmailNotificationService emailNotificationService;
     private final CacheManager cacheManager;
+    private final RedisRateLimiterService redisRateLimiterService;
 
     public AuthService(UserRepository userRepository,
                        UserService userService,
@@ -44,7 +47,8 @@ public class AuthService {
                        JwtTokenService jwtTokenService,
                        OtpService otpService,
                        EmailNotificationService emailNotificationService,
-                       CacheManager cacheManager) {
+                       CacheManager cacheManager,
+                       RedisRateLimiterService redisRateLimiterService) {
         this.userRepository = userRepository;
         this.userService = userService;
         this.passwordService = passwordService;
@@ -54,6 +58,7 @@ public class AuthService {
         this.otpService = otpService;
         this.emailNotificationService = emailNotificationService;
         this.cacheManager = cacheManager;
+        this.redisRateLimiterService = redisRateLimiterService;
     }
 
     public AuthResponse sendOtp(SendOtpRequest request) {
@@ -63,10 +68,17 @@ public class AuthService {
 
         String email = request.getEmail().trim().toLowerCase();
 
+        if (redisRateLimiterService.isOtpRateLimited(email)) {
+            log.warn("[Redis RateLimiter] OTP generation rate limit exceeded for email: {}", email);
+            throw new RateLimitExceededException("Please try again in a minute");
+        }
+
         if (userRepository.findByEmail(email).isPresent()) {
             log.error("Email already registered: {}", email);
             throw new UserAlreadyExistsException("Email is already registered");
         }
+
+        redisRateLimiterService.recordOtpRequest(email);
 
         String otp = otpService.generateAndStoreOtp(email);
         emailNotificationService.sendOtp(email, otp);
@@ -108,6 +120,13 @@ public class AuthService {
         }
 
         String email = request.getEmail().trim().toLowerCase();
+
+        if (redisRateLimiterService.isOtpRateLimited(email)) {
+            log.warn("[Redis RateLimiter] Resend OTP rate limit exceeded for email: {}", email);
+            throw new RateLimitExceededException("Please try again in a minute");
+        }
+
+        redisRateLimiterService.recordOtpRequest(email);
 
         String newOtp = otpService.generateAndStoreOtp(email);
         emailNotificationService.sendOtp(email, newOtp);
@@ -166,16 +185,31 @@ public class AuthService {
             throw new IllegalArgumentException("Login request cannot be null");
         }
         
-        String identifier = request.getIdentifier();
+        String identifier = request.getIdentifier() != null ? request.getIdentifier().trim() : "";
         String password = request.getPassword();
 
         log.info("Attempting login for identifier: {}", identifier);
 
-        Cache usersCache = cacheManager.getCache("users");
-        if (usersCache != null && usersCache.get(identifier) != null) {
-            log.info("Cache HIT for user identifier: {}", identifier);
-        } else {
-            log.info("Cache MISS for user identifier: {}", identifier);
+        // Unified account rate limit key: Map username or email to the user's canonical username
+        Optional<User> optionalUser = userRepository.findByIdentifier(identifier);
+        String accountRateLimitKey = optionalUser
+                .map(u -> u.getUsername().toLowerCase())
+                .orElseGet(identifier::toLowerCase);
+
+        if (redisRateLimiterService.isLoginRateLimited(accountRateLimitKey)) {
+            log.warn("[Redis RateLimiter] Login rate limit exceeded for account key: {}", accountRateLimitKey);
+            throw new RateLimitExceededException("Please try again in a minute");
+        }
+
+        try {
+            Cache usersCache = cacheManager.getCache("users");
+            if (usersCache != null && usersCache.get(identifier) != null) {
+                log.info("[Redis Cache] Cache HIT for user identifier: {}", identifier);
+            } else {
+                log.info("[Redis Cache] Cache MISS for user identifier: {}", identifier);
+            }
+        } catch (Exception e) {
+            log.warn("[Redis Cache] Exception while inspecting cache for identifier {}: {}", identifier, e.getMessage());
         }
 
         User user;
@@ -183,11 +217,13 @@ public class AuthService {
             user = userService.findByIdentifierCached(identifier);
         } catch (ResourceNotFoundException e) {
             log.error("Authentication failed during login: user not found");
+            redisRateLimiterService.recordFailedLoginAttempt(accountRateLimitKey);
             throw new InvalidCredentialsException("Invalid Credentials");
         }
 
         if (!passwordService.matches(password, user.getPassword())) {
             log.error("Authentication failed during login: incorrect password");
+            redisRateLimiterService.recordFailedLoginAttempt(accountRateLimitKey);
             throw new InvalidCredentialsException("Invalid Credentials");
         }
 
@@ -195,6 +231,9 @@ public class AuthService {
             log.warn("Login rejected: user email is unverified");
             throw new InvalidCredentialsException("ACCOUNT_NOT_VERIFIED: Account is not verified. Please verify your email via OTP.");
         }
+
+        // On successful login, reset the failed attempt counter for this user account
+        redisRateLimiterService.resetLoginAttempts(accountRateLimitKey);
 
         log.info("Login successful");
         String token = jwtTokenService.generateToken(user.getUsername());

@@ -38,7 +38,7 @@ public class OtpService {
         String otp = String.format("%06d", secureRandom.nextInt(1000000));
         otpCache.put(normalizedEmail, otp);
         attemptCache.put(normalizedEmail, 0);
-        log.info("Generated new OTP for {}", normalizedEmail);
+        log.info("[Caffeine Cache] Generated new OTP for {}", normalizedEmail);
         return otp;
     }
 
@@ -65,17 +65,17 @@ public class OtpService {
         String cachedOtp = otpCache.getIfPresent(normalizedEmail);
 
         if (cachedOtp == null) {
-            log.warn("OTP validation failed: No active OTP found for {}", normalizedEmail);
+            log.warn("[Caffeine Cache] OTP validation failed: No active OTP found for {}", normalizedEmail);
             return false;
         }
 
         if (isMaxAttemptsExceeded(normalizedEmail)) {
-            log.warn("OTP validation blocked: Max attempts exceeded for {}", normalizedEmail);
+            log.warn("[Caffeine Cache] OTP validation blocked: Max attempts exceeded for {}", normalizedEmail);
             return false;
         }
 
         if (cachedOtp.equals(inputOtp)) {
-            log.info("OTP verification successful for {}", normalizedEmail);
+            log.info("[Caffeine Cache] OTP verification successful for {}", normalizedEmail);
             clearOtp(normalizedEmail);
             markEmailAsVerified(normalizedEmail);
             return true;
@@ -83,7 +83,7 @@ public class OtpService {
             Integer attempts = attemptCache.getIfPresent(normalizedEmail);
             int currentAttempts = (attempts != null ? attempts : 0) + 1;
             attemptCache.put(normalizedEmail, currentAttempts);
-            log.warn("Invalid OTP entered for {}. Attempt {}/{}", normalizedEmail, currentAttempts, MAX_ATTEMPTS);
+            log.warn("[Caffeine Cache] Invalid OTP entered for {}. Attempt {}/{}", normalizedEmail, currentAttempts, MAX_ATTEMPTS);
             return false;
         }
     }
@@ -91,7 +91,7 @@ public class OtpService {
     public void markEmailAsVerified(String email) {
         String normalizedEmail = normalizeEmail(email);
         verifiedEmailCache.put(normalizedEmail, Boolean.TRUE);
-        log.info("Email marked as verified in cache: {}", normalizedEmail);
+        log.info("[Caffeine Cache] Email marked as verified: {}", normalizedEmail);
     }
 
     public boolean isEmailVerified(String email) {
