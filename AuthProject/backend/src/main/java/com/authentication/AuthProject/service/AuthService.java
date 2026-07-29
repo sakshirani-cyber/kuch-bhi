@@ -28,6 +28,7 @@ public class AuthService {
     private final PhoneHashService phoneHashService;
     private final OtpService otpService;
     private final UserService userService;
+    private final RateLimitService rateLimitService;
 
     public AuthResponse signup(SignupRequest request) {
         String email = request.getEmail().trim().toLowerCase();
@@ -69,20 +70,35 @@ public class AuthService {
                 .build();
     }
 
+
     public AuthResponse login(LoginRequest request) {
         String email = request.getEmail().trim().toLowerCase();
         log.debug("Looking up user for login: {}", email);
         User user = repository.findByEmail(email)
                 .orElseThrow(() -> {
+
+                    rateLimitService.recordFailedAttempt(email);
+
                     log.warn("Login failed: User not found with email: {}", email);
                     return new InvalidCredentialsException("Invalid email or password.");
                 });
 
+        // Check if user is already blocked
+        rateLimitService.checkLoginBlocked(email);
+
         log.debug("Verifying password credentials for: {}", email);
+
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+
+            // Record failed attempt
+            rateLimitService.recordFailedAttempt(email);
+
             log.warn("Login failed: Password mismatch for email: {}", email);
             throw new InvalidCredentialsException("Invalid email or password.");
         }
+
+        // Password is correct then reset failed attempts
+        rateLimitService.resetLoginLimit(email);
 
         if (!user.isVerified()) {
             log.warn("Login failed: Email not verified for: {}", email);
