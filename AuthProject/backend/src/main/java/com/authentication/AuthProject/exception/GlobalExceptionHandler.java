@@ -17,76 +17,57 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiErrorResponse> handleNotFound(
-            ResourceNotFoundException ex){
+            ResourceNotFoundException ex) {
 
-        ApiErrorResponse error = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.NOT_FOUND.value())
-                .error(HttpStatus.NOT_FOUND.getReasonPhrase())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(error);
+        return buildResponse(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ApiErrorResponse> handleDuplicate(
-            DuplicateResourceException ex){
+            DuplicateResourceException ex) {
 
-        ApiErrorResponse error = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.CONFLICT.value())
-                .error(HttpStatus.CONFLICT.getReasonPhrase())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(error);
+        return buildResponse(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<ApiErrorResponse> handleCredentials(
-            InvalidCredentialsException ex){
+            InvalidCredentialsException ex) {
 
-        ApiErrorResponse error = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.UNAUTHORIZED.value())
-                .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(error);
+        return buildResponse(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(BadRequestException.class)
     public ResponseEntity<ApiErrorResponse> handleBadRequest(
-            BadRequestException ex){
+            BadRequestException ex) {
 
-        ApiErrorResponse error = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.badRequest().body(error);
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(UnverifiedUserException.class)
     public ResponseEntity<ApiErrorResponse> handleUnverifiedUser(
             UnverifiedUserException ex) {
 
-        ApiErrorResponse error = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.FORBIDDEN.value())
-                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
-                .message(ex.getMessage())
-                .build();
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(error);
+        return buildResponse(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -98,31 +79,44 @@ public class GlobalExceptionHandler {
         ex.getBindingResult()
                 .getFieldErrors()
                 .forEach(error ->
-                        errors.put(error.getField(),
-                                error.getDefaultMessage()));
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
+                );
 
-        ApiErrorResponse response = ApiErrorResponse.builder()
-                .timestamp(Instant.now())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message("Validation Failed")
-                .fieldErrors(errors)
-                .build();
+        return buildResponse(
+                HttpStatus.BAD_REQUEST,
+                "Validation Failed",
+                errors
+        );
+    }
 
-        return ResponseEntity.badRequest().body(response);
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ApiErrorResponse> handleRateLimitExceeded(
+            RateLimitExceededException ex) {
+
+        log.warn("Rate limit exceeded: {}", ex.getMessage());
+
+        return buildResponse(
+                HttpStatus.TOO_MANY_REQUESTS,
+                ex.getMessage(),
+                null
+        );
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiErrorResponse> handleGlobalException(Exception ex) {
+    public ResponseEntity<ApiErrorResponse> handleGlobalException(
+            Exception ex) {
 
-       log.error("Unexpected error occurred", ex);
+        log.error("Unexpected error occurred", ex);
 
-       return buildResponse(
-            HttpStatus.INTERNAL_SERVER_ERROR,
-            "Something went wrong",
-            null
-    );
-}
+        return buildResponse(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Something went wrong",
+                null
+        );
+    }
 
     private ResponseEntity<ApiErrorResponse> buildResponse(
             HttpStatus status,
