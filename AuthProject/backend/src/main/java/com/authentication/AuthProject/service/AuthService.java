@@ -10,6 +10,7 @@ import com.authentication.AuthProject.exception.DuplicateResourceException;
 import com.authentication.AuthProject.exception.InvalidCredentialsException;
 import com.authentication.AuthProject.exception.UnverifiedUserException;
 import com.authentication.AuthProject.repository.UserRepository;
+import com.authentication.AuthProject.security.JwtService;
 import com.authentication.AuthProject.util.EncryptionService;
 import com.authentication.AuthProject.util.PhoneHashService;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class AuthService {
     private final OtpService otpService;
     private final UserService userService;
     private final RateLimitService rateLimitService;
+    private final JwtService jwtService;
 
     public AuthResponse signup(SignupRequest request) {
         String email = request.getEmail().trim().toLowerCase();
@@ -108,9 +110,13 @@ public class AuthService {
         userService.warmProfileCache(user);
 
         log.info("User login validated successfully for ID: {}", user.getId());
+
+        String token = jwtService.generateToken(user.getEmail());
+
         return AuthResponse.builder()
                 .userId(user.getId())
                 .message("Login successful")
+                .token(token)
                 .build();
     }
 

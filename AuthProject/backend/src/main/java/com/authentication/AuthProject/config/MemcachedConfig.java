@@ -8,7 +8,6 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-
 // Configures the Spy Memcached client from application properties.
  
 @Configuration

@@ -34,7 +34,13 @@ public class UserService {
     public UserResponse getUser(Long id) {
         log.debug("Attempting to retrieve user details for ID: {}", id);
 
-        return userProfileCacheService.getCachedUser(id)
+        String email = repository.findEmailById(id)
+                .orElseThrow(() -> {
+                    log.warn("User retrieval failed: User ID {} not found", id);
+                    return new ResourceNotFoundException("User not found.");
+                });
+
+        return userProfileCacheService.getCachedUser(email)
                 .orElseGet(() -> loadAndCacheUser(id));
     }
 
@@ -74,7 +80,7 @@ public class UserService {
 
         log.info("Successfully updated user profile for ID: {}", id);
         UserResponse response = toResponse(user);
-        userProfileCacheService.evictUser(id);
+        userProfileCacheService.evictUser(user.getEmail());
         return response;
     }
 
@@ -119,7 +125,7 @@ public class UserService {
                 });
 
         repository.delete(user);
-        userProfileCacheService.evictUser(id);
+        userProfileCacheService.evictUser(user.getEmail());
         log.info("Successfully deleted user ID: {}", id);
     }
 

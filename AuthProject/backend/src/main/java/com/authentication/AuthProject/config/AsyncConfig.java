@@ -7,9 +7,8 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.util.concurrent.Executor;
 
-/**
- * Enables asynchronous execution for OTP delivery and related tasks.
- */
+//Enables asynchronous execution for OTP delivery and related tasks.
+
 @Configuration
 @EnableAsync
 public class AsyncConfig {

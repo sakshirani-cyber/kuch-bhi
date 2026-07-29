@@ -57,6 +57,9 @@
             });
 
             setUserId(response.userId);
+            if (response.token) {
+                setToken(response.token);
+            }
             window.location.href = '/home.html';
         } catch (error) {
             if (error.status === 403) {
