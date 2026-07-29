@@ -32,6 +32,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Modifying(clearAutomatically = true)
     @Transactional
+    @Query(value = "UPDATE users SET verified = true WHERE email = :email", nativeQuery = true)
+    int markVerifiedByEmail(@Param("email") String email);
+
+    @Modifying(clearAutomatically = true)
+    @Transactional
     @Query(value = "DELETE FROM users WHERE email = :email", nativeQuery = true)
     int deleteUserByEmail(@Param("email") String email);
 }

@@ -31,6 +31,7 @@ public class UserResponse implements Serializable {
     private LocalDate dateOfBirth;
 
     private Integer age;
+    private boolean verified;
 
     public static UserResponse from(User user) {
         return UserResponse.builder()
@@ -40,6 +41,7 @@ public class UserResponse implements Serializable {
                 .contactNumber(user.getContactNumber())
                 .dateOfBirth(user.getDateOfBirth())
                 .age(user.getAge())
+                .verified(user.isVerified())
                 .build();
     }
 }

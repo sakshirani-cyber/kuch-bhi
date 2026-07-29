@@ -48,9 +48,10 @@ form.addEventListener("submit", async function (e) {
 
         message.innerHTML = `<div class="success">${escapeHtml(response.message || "Account Created Successfully!")}</div>`;
 
+        sessionStorage.setItem("pendingVerificationEmail", email);
         setTimeout(() => {
-            window.location.href = "login.html";
-        }, 1500);
+            window.location.href = "verify-otp.html";
+        }, 1200);
     } catch (error) {
         message.innerHTML = formatApiError(error);
         button.innerHTML = "Create Account";
