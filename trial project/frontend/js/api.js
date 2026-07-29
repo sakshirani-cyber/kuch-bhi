@@ -108,6 +108,16 @@ const VALIDATORS = {
             return "New username must be between 3 and 50 characters";
         }
         return "";
+    },
+    otp(value) {
+        const v = value.trim();
+        if (!v) {
+            return "OTP is mandatory";
+        }
+        if (!/^\d{6}$/.test(v)) {
+            return "OTP must be exactly 6 digits";
+        }
+        return "";
     }
 };
 
@@ -322,6 +332,35 @@ async function signup(user) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(user)
+    });
+
+    return parseResponse(response);
+}
+
+async function verifyOtp(email, otp) {
+    const response = await fetch(`${BASE_URL}/verify-otp`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email: email,
+            otp: otp
+        })
+    });
+
+    return parseResponse(response);
+}
+
+async function resendOtp(email) {
+    const response = await fetch(`${BASE_URL}/resend-otp`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            email: email
+        })
     });
 
     return parseResponse(response);

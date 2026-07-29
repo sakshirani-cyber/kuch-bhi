@@ -44,13 +44,14 @@ public class User {
     @Column
     private Integer age;
 
-     public void setAge() {
-         if (dateOfBirth == null) {
-             this.age = null;
-             return;
-         }
-         this.age = Period.between(dateOfBirth, LocalDate.now()).getYears();
-     }
+    @Column(nullable = false)
+    private boolean verified = false;
 
-
+    public void setAge() {
+        if (dateOfBirth == null) {
+            this.age = null;
+            return;
+        }
+        this.age = Period.between(dateOfBirth, LocalDate.now()).getYears();
+    }
 }

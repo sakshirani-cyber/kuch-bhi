@@ -1,20 +1,22 @@
 package com.example.AuthProject.service;
 
 import com.example.AuthProject.cache.UserCacheService;
+import com.example.AuthProject.debug.AgentDebugLog;
 import com.example.AuthProject.dto.ApiResponse;
 import com.example.AuthProject.dto.AuthResponse;
 import com.example.AuthProject.dto.DeleteUserRequest;
 import com.example.AuthProject.dto.LoginRequest;
 import com.example.AuthProject.dto.RegisterRequest;
+import com.example.AuthProject.dto.ResendOtpRequest;
 import com.example.AuthProject.dto.UpdatePasswordRequest;
 import com.example.AuthProject.dto.UpdateUsernameRequest;
 import com.example.AuthProject.dto.UserResponse;
+import com.example.AuthProject.dto.VerifyOtpRequest;
 import com.example.AuthProject.entity.User;
 import com.example.AuthProject.exception.ApiException;
 import com.example.AuthProject.repository.UserRepository;
 import com.example.AuthProject.security.JwtService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,26 +27,29 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Map;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class AuthService {
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
     private static final String GENERIC_LOGIN_ERROR = "Invalid email or password";
 
     private final UserRepository repository;
     private final PasswordEncoder passwordEncoder;
     private final UserCacheService userCacheService;
     private final JwtService jwtService;
+    private final OtpService otpService;
 
     public AuthService(
             UserRepository repository,
             PasswordEncoder passwordEncoder,
             UserCacheService userCacheService,
-            JwtService jwtService
+            JwtService jwtService,
+            OtpService otpService
     ) {
         this.repository = repository;
         this.passwordEncoder = passwordEncoder;
         this.userCacheService = userCacheService;
         this.jwtService = jwtService;
+        this.otpService = otpService;
     }
 
     @Transactional
@@ -68,11 +73,30 @@ public class AuthService {
         user.setContactNumber(request.getContactNumber());
         user.setDateOfBirth(request.getDateOfBirth());
         user.setAge();
+        user.setVerified(false);
 
         repository.save(user);
+        // #region agent log
+        AgentDebugLog.log("D", "AuthService.register:saved", "user_registered_unverified", Map.of(
+                "userId", String.valueOf(user.getUserId()),
+                "verified", String.valueOf(user.isVerified())
+        ));
+        // #endregion
+        otpService.issueOtp(request.getEmail());
 
         log.info("User registered successfully email={}", request.getEmail());
-        return ApiResponse.success(HttpStatus.CREATED, "User registered successfully!");
+        return ApiResponse.success(
+                HttpStatus.CREATED,
+                "Registered successfully. Please verify the OTP sent to your email."
+        );
+    }
+
+    public ApiResponse<Void> verifyOtp(VerifyOtpRequest request) {
+        return otpService.verifyOtp(request.getEmail(), request.getOtp());
+    }
+
+    public ApiResponse<Void> resendOtp(ResendOtpRequest request) {
+        return otpService.resendOtp(request.getEmail());
     }
 
     public ApiResponse<AuthResponse> login(LoginRequest request) {
@@ -89,6 +113,12 @@ public class AuthService {
         }
 
         User user = optionalUser.get();
+        // #region agent log
+        AgentDebugLog.log("C", "AuthService.login:loaded", "user_loaded_for_login", Map.of(
+                "userId", String.valueOf(user.getUserId()),
+                "verified", String.valueOf(user.isVerified())
+        ));
+        // #endregion
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Login failed: incorrect password email={}", request.getEmail());
             throw new ApiException(
@@ -98,9 +128,34 @@ public class AuthService {
             );
         }
 
+        if (!user.isVerified()) {
+            // #region agent log
+            AgentDebugLog.log("A", "AuthService.login:blocked", "login_blocked_unverified", Map.of(
+                    "userId", String.valueOf(user.getUserId()),
+                    "verified", "false"
+            ));
+            // #endregion
+            log.warn("Login failed: email not verified email={}", request.getEmail());
+            throw new ApiException(
+                    HttpStatus.FORBIDDEN,
+                    "Login failed",
+                    Map.of(
+                            "verification",
+                            "Please verify your email with the OTP before logging in"
+                    )
+            );
+        }
+
+        // #region agent log
+        AgentDebugLog.log("C", "AuthService.login:success", "login_allowed_verified", Map.of(
+                "userId", String.valueOf(user.getUserId()),
+                "verified", "true"
+        ));
+        // #endregion
+
         user.setAge();
         UserResponse userResponse = UserResponse.from(user);
-        userCacheService.put(userResponse);
+        userCacheService.putUserById(userResponse);
 
         String token = jwtService.generateToken(user.getEmail());
         AuthResponse authResponse = AuthResponse.builder()
@@ -131,7 +186,7 @@ public class AuthService {
 
         user.setAge();
         UserResponse userResponse = UserResponse.from(user);
-        userCacheService.put(userResponse);
+        userCacheService.putUserById(userResponse);
         return ApiResponse.success(HttpStatus.OK, "User fetched successfully", userResponse);
     }
 
@@ -175,7 +230,7 @@ public class AuthService {
             );
         }
 
-        userCacheService.put(UserResponse.from(user));
+        userCacheService.evictUserById(user.getUserId());
 
         log.info("Password updated successfully email={}", email);
         return ApiResponse.success(HttpStatus.OK, "Password updated successfully!");
@@ -222,7 +277,8 @@ public class AuthService {
 
         user.setUsername(request.getNewUsername());
         user.setAge();
-        userCacheService.put(UserResponse.from(user));
+        userCacheService.evictUserById(user.getUserId());
+        userCacheService.putUserById(UserResponse.from(user));
 
         log.info("Username updated successfully email={} newUsername={}", email, request.getNewUsername());
         return ApiResponse.success(HttpStatus.OK, "Username updated successfully!");
@@ -249,6 +305,7 @@ public class AuthService {
             );
         }
 
+        Long userId = user.getUserId();
         int deleted = repository.deleteUserByEmail(email);
         if (deleted == 0) {
             throw new ApiException(
@@ -258,7 +315,7 @@ public class AuthService {
             );
         }
 
-        userCacheService.evict(email);
+        userCacheService.evictUserById(userId);
 
         log.info("User deleted successfully email={}", email);
         return ApiResponse.success(HttpStatus.OK, "User deleted successfully!");

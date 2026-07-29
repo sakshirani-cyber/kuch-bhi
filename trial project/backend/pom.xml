@@ -94,6 +94,23 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Distributed rate limiting (Bucket4j + Redis/Lettuce) -->
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>8.19.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-lettuce</artifactId>
+			<version>8.19.0</version>
+		</dependency>
+
 		<!-- Reads backend/.env and exposes values for ${...} in application.properties -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
