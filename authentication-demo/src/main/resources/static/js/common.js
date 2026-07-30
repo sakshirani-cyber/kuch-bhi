@@ -1,17 +1,24 @@
 const API_BASE = '/api/v1/auth';
 
-async function callApi(url, method, body) {
+async function callApi(url, method = 'GET', body) {
   const headers = { 'Content-Type': 'application/json' };
+  
   const token = sessionStorage.getItem('token');
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: JSON.stringify(body)
-  });
+  const username = sessionStorage.getItem('username');
+  if (username) {
+    headers['X-User-Name'] = username;
+  }
+
+  const options = { method, headers };
+  if (method !== 'GET' && method !== 'HEAD' && body !== undefined) {
+    options.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(url, options);
 
   const contentType = res.headers.get('content-type') || '';
   const payload = contentType.includes('application/json')

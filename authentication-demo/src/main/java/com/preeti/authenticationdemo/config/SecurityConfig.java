@@ -77,7 +77,10 @@ public class SecurityConfig {
                     "/favicon.ico",
                     "/api/v1/auth/**",
                     "/oauth2/**",
-                    "/login/oauth2/**"
+                    "/login/oauth2/**",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui.html"
                 ).permitAll()
                 .anyRequest().permitAll()
             )
