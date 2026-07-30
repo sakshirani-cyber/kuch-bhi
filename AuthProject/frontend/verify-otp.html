@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Email</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>Verify Email</h1>
+
+    <p id="message" class="message" hidden></p>
+    <p id="error" class="error" hidden></p>
+
+    <form id="verifyForm">
+        <label for="email">Email <span class="required">*</span></label>
+        <input type="email" id="email" name="email" placeholder="Email" required readonly>
+
+        <label for="otp">OTP <span class="required">*</span></label>
+        <input type="text" id="otp" name="otp" placeholder="6-digit OTP" maxlength="6" pattern="\d{6}" required>
+
+        <div class="form-buttons">
+            <button type="submit">Verify</button>
+            <button type="button" id="resendBtn">Resend OTP</button>
+        </div>
+    </form>
+
+    <p>
+        Already verified?
+        <a href="/login.html">Login</a>
+    </p>
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/api.js"></script>
+<script>
+    const pendingEmail = sessionStorage.getItem('pendingEmail');
+    const emailInput = document.getElementById('email');
+
+    if (!pendingEmail) {
+        window.location.href = '/signup.html';
+    } else {
+        emailInput.value = pendingEmail;
+    }
+
+    document.getElementById('verifyForm').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        showMessage('message', '');
+        showMessage('error', '', true);
+
+        const payload = {
+            email: emailInput.value.trim(),
+            otp: document.getElementById('otp').value.trim()
+        };
+
+        try {
+            await apiRequest('/api/auth/verify-otp', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            sessionStorage.removeItem('pendingEmail');
+            window.location.href = '/login.html?verified=success';
+        } catch (error) {
+            showMessage('error', formatError(error), true);
+        }
+    });
+
+    document.getElementById('resendBtn').addEventListener('click', async () => {
+        showMessage('message', '');
+        showMessage('error', '', true);
+
+        const payload = {
+            email: emailInput.value.trim()
+        };
+
+        try {
+            await apiRequest('/api/auth/resend-otp', {
+                method: 'POST',
+                body: JSON.stringify(payload)
+            });
+
+            showMessage('message', 'OTP sent to your email.');
+        } catch (error) {
+            showMessage('error', formatError(error), true);
+        }
+    });
+</script>
+
+</body>
+</html>

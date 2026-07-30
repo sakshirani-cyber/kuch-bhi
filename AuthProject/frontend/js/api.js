@@ -12,9 +12,22 @@ function clearUserId() {
     sessionStorage.removeItem('userId');
 }
 
+function getToken() {
+    return sessionStorage.getItem('token');
+}
+
+function setToken(token) {
+    sessionStorage.setItem('token', token);
+}
+
+function clearToken() {
+    sessionStorage.removeItem('token');
+}
+
 function requireAuth() {
     const userId = getUserId();
-    if (!userId) {
+    const token = getToken();
+    if (!userId || !token) {
         window.location.href = '/login.html';
         return null;
     }
@@ -38,11 +51,18 @@ function resolveAuthenticatedUserId() {
 }
 
 async function apiRequest(url, options = {}) {
+    const headers = {
+        'Content-Type': 'application/json',
+        ...options.headers
+    };
+
+    const token = getToken();
+    if (token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(API_BASE + url, {
-        headers: {
-            'Content-Type': 'application/json',
-            ...options.headers
-        },
+        headers,
         ...options
     });
 
@@ -55,6 +75,12 @@ async function apiRequest(url, options = {}) {
     }
 
     if (!response.ok) {
+        if (response.status === 401 && getToken()) {
+            clearUserId();
+            clearToken();
+            window.location.href = '/login.html';
+            return;
+        }
         throw { status: response.status, data };
     }
 
@@ -88,5 +114,6 @@ function formatError(error) {
 
 function logout() {
     clearUserId();
+    clearToken();
     window.location.href = '/login.html';
 }
