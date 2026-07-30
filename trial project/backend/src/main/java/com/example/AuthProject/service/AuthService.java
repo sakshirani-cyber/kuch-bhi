@@ -1,7 +1,6 @@
 package com.example.AuthProject.service;
 
 import com.example.AuthProject.cache.UserCacheService;
-import com.example.AuthProject.debug.AgentDebugLog;
 import com.example.AuthProject.dto.ApiResponse;
 import com.example.AuthProject.dto.AuthResponse;
 import com.example.AuthProject.dto.DeleteUserRequest;
@@ -76,12 +75,6 @@ public class AuthService {
         user.setVerified(false);
 
         repository.save(user);
-        // #region agent log
-        AgentDebugLog.log("D", "AuthService.register:saved", "user_registered_unverified", Map.of(
-                "userId", String.valueOf(user.getUserId()),
-                "verified", String.valueOf(user.isVerified())
-        ));
-        // #endregion
         otpService.issueOtp(request.getEmail());
 
         log.info("User registered successfully email={}", request.getEmail());
@@ -113,12 +106,6 @@ public class AuthService {
         }
 
         User user = optionalUser.get();
-        // #region agent log
-        AgentDebugLog.log("C", "AuthService.login:loaded", "user_loaded_for_login", Map.of(
-                "userId", String.valueOf(user.getUserId()),
-                "verified", String.valueOf(user.isVerified())
-        ));
-        // #endregion
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             log.warn("Login failed: incorrect password email={}", request.getEmail());
             throw new ApiException(
@@ -129,12 +116,6 @@ public class AuthService {
         }
 
         if (!user.isVerified()) {
-            // #region agent log
-            AgentDebugLog.log("A", "AuthService.login:blocked", "login_blocked_unverified", Map.of(
-                    "userId", String.valueOf(user.getUserId()),
-                    "verified", "false"
-            ));
-            // #endregion
             log.warn("Login failed: email not verified email={}", request.getEmail());
             throw new ApiException(
                     HttpStatus.FORBIDDEN,
@@ -145,13 +126,6 @@ public class AuthService {
                     )
             );
         }
-
-        // #region agent log
-        AgentDebugLog.log("C", "AuthService.login:success", "login_allowed_verified", Map.of(
-                "userId", String.valueOf(user.getUserId()),
-                "verified", "true"
-        ));
-        // #endregion
 
         user.setAge();
         UserResponse userResponse = UserResponse.from(user);

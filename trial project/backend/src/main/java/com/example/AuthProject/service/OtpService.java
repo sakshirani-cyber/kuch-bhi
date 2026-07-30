@@ -1,7 +1,6 @@
 package com.example.AuthProject.service;
 
 import com.example.AuthProject.cache.OtpCacheService;
-import com.example.AuthProject.debug.AgentDebugLog;
 import com.example.AuthProject.dto.ApiResponse;
 import com.example.AuthProject.entity.User;
 import com.example.AuthProject.exception.ApiException;
@@ -56,15 +55,6 @@ public class OtpService {
                         Map.of("email", "User not found")
                 ));
 
-        // #region agent log
-        AgentDebugLog.log("A", "OtpService.verifyOtp:loaded", "user_loaded_for_verify", Map.of(
-                "userId", String.valueOf(user.getUserId()),
-                "verified", String.valueOf(user.isVerified()),
-                "hasOtp", String.valueOf(otpCacheService.getOtp(email).isPresent()),
-                "attempts", String.valueOf(otpCacheService.getAttempts(email))
-        ));
-        // #endregion
-
         if (user.isVerified()) {
             otpCacheService.clearOtpState(email);
             return ApiResponse.success(HttpStatus.OK, "Email already verified");
@@ -108,12 +98,6 @@ public class OtpService {
         }
 
         int updated = userRepository.markVerifiedByEmail(email);
-        // #region agent log
-        AgentDebugLog.log("B", "OtpService.verifyOtp:markVerified", "native_update_result", Map.of(
-                "updatedRows", String.valueOf(updated),
-                "userId", String.valueOf(user.getUserId())
-        ));
-        // #endregion
         if (updated == 0) {
             throw new ApiException(
                     HttpStatus.NOT_FOUND,

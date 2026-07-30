@@ -1,4 +1,5 @@
 const BASE_URL = "http://localhost:8080/api/v1/auth";
+const FILES_BASE_URL = "http://localhost:8080/api/v1/files";
 
 const PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,20}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -448,6 +449,65 @@ async function deleteUser(email, password) {
         })
     });
 
+    return parseResponse(response);
+}
+
+async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch(FILES_BASE_URL, {
+        method: "POST",
+        headers: authHeaders(false),
+        body: formData
+    });
+
+    const envelope = await parseResponse(response);
+    const data = envelope && envelope.data ? envelope.data : envelope;
+    if (!data || data.id == null) {
+        throw new ApiError(
+            (envelope && envelope.message) || "Upload response missing file details",
+            { file: "File id not found in upload response" }
+        );
+    }
+    return { envelope: envelope, file: data };
+}
+
+async function listFiles() {
+    const response = await fetch(FILES_BASE_URL, {
+        headers: authHeaders(false)
+    });
+    const envelope = await parseResponse(response);
+    const data = envelope && envelope.data != null ? envelope.data : [];
+    if (!Array.isArray(data)) {
+        throw new ApiError(
+            (envelope && envelope.message) || "Files list response invalid",
+            { files: "Expected a list of files" }
+        );
+    }
+    return { envelope: envelope, files: data };
+}
+
+async function getFile(fileId) {
+    const response = await fetch(`${FILES_BASE_URL}/${encodeURIComponent(fileId)}`, {
+        headers: authHeaders(false)
+    });
+    const envelope = await parseResponse(response);
+    const data = envelope && envelope.data ? envelope.data : envelope;
+    if (!data || data.id == null) {
+        throw new ApiError(
+            (envelope && envelope.message) || "File response missing details",
+            { file: "File id not found in response" }
+        );
+    }
+    return { envelope: envelope, file: data };
+}
+
+async function deleteFile(fileId) {
+    const response = await fetch(`${FILES_BASE_URL}/${encodeURIComponent(fileId)}`, {
+        method: "DELETE",
+        headers: authHeaders(false)
+    });
     return parseResponse(response);
 }
 

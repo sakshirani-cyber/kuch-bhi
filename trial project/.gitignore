@@ -10,3 +10,8 @@ myProject.zip
 .env.local
 .env.*.local
 !**/.env.example
+
+# Uploaded user files
+uploads/
+backend/uploads/
+backend/target/test-uploads/
