@@ -1,63 +1,122 @@
 package com.example.AuthProject.cache;
 
 import com.example.AuthProject.dto.UserResponse;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class UserCacheService {
-    private static final Logger log = LoggerFactory.getLogger(UserCacheService.class);
+    private static final String USER_KEY_PREFIX = "user:";
+    private static final String USER_EMAIL_KEY_PREFIX = "user:email:";
 
-    private final Cache<String, UserResponse> cache;
+    private final StringRedisTemplate redis;
+    private final ObjectMapper objectMapper;
+    private final Duration ttl;
 
     public UserCacheService(
-            @Value("${app.cache.ttl-minutes:30}") long ttlMinutes,
-            @Value("${app.cache.max-size:1000}") long maxSize
+            StringRedisTemplate redis,
+            ObjectMapper objectMapper,
+            @Value("${app.cache.user-ttl-seconds:600}") long userTtlSeconds
     ) {
-        this.cache = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofMinutes(ttlMinutes))
-                .maximumSize(maxSize)
-                .build();
-        log.info("Caffeine user cache initialized ttlMinutes={} maxSize={}", ttlMinutes, maxSize);
+        this.redis = redis;
+        this.objectMapper = objectMapper;
+        this.ttl = Duration.ofSeconds(userTtlSeconds);
+        log.info("Redis user profile cache initialized ttlSeconds={}", userTtlSeconds);
     }
 
-    public void put(UserResponse user) {
-        if (user == null || user.getUserEmail() == null || user.getUserEmail().isBlank()) {
+    public void putUserById(UserResponse user) {
+        if (user == null || user.getUserId() == null) {
             return;
         }
-        cache.put(key(user.getUserEmail()), user);
-        log.debug("Cached user details email={}", user.getUserEmail());
+        try {
+            String json = objectMapper.writeValueAsString(user);
+            String idKey = idKey(user.getUserId());
+            redis.opsForValue().set(idKey, json, ttl);
+            if (user.getUserEmail() != null && !user.getUserEmail().isBlank()) {
+                redis.opsForValue().set(emailKey(user.getUserEmail()), String.valueOf(user.getUserId()), ttl);
+            }
+            log.debug("Cached user profile userId={}", user.getUserId());
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize user for Redis cache userId={}: {}", user.getUserId(), e.getMessage());
+        } catch (Exception e) {
+            log.warn("Redis putUserById failed userId={}: {}", user.getUserId(), e.getMessage());
+        }
+    }
+
+    public Optional<UserResponse> getUserById(Long userId) {
+        if (userId == null) {
+            return Optional.empty();
+        }
+        try {
+            String json = redis.opsForValue().get(idKey(userId));
+            if (json == null || json.isBlank()) {
+                log.debug("Cache miss userId={}", userId);
+                return Optional.empty();
+            }
+            UserResponse cached = objectMapper.readValue(json, UserResponse.class);
+            log.debug("Cache hit userId={}", userId);
+            return Optional.of(cached);
+        } catch (Exception e) {
+            log.warn("Redis getUserById failed userId={}: {}", userId, e.getMessage());
+            return Optional.empty();
+        }
     }
 
     public Optional<UserResponse> getByEmail(String email) {
         if (email == null || email.isBlank()) {
             return Optional.empty();
         }
-        UserResponse cached = cache.getIfPresent(key(email));
-        if (cached != null) {
-            log.debug("Cache hit email={}", email);
-            return Optional.of(cached);
+        try {
+            String userIdStr = redis.opsForValue().get(emailKey(email));
+            if (userIdStr == null || userIdStr.isBlank()) {
+                log.debug("Cache miss by email={}", email);
+                return Optional.empty();
+            }
+            Long userId = Long.valueOf(userIdStr);
+            return getUserById(userId);
+        } catch (Exception e) {
+            log.warn("Redis getByEmail failed email={}: {}", email, e.getMessage());
+            return Optional.empty();
         }
-        log.debug("Cache miss email={}", email);
-        return Optional.empty();
     }
 
-    public void evict(String email) {
-        if (email == null || email.isBlank()) {
+    public void evictUserById(Long userId) {
+        if (userId == null) {
             return;
         }
-        cache.invalidate(key(email));
-        log.debug("Evicted cached user email={}", email);
+        try {
+            String idKey = idKey(userId);
+            String json = redis.opsForValue().get(idKey);
+            if (json != null && !json.isBlank()) {
+                try {
+                    UserResponse cached = objectMapper.readValue(json, UserResponse.class);
+                    if (cached.getUserEmail() != null && !cached.getUserEmail().isBlank()) {
+                        redis.delete(emailKey(cached.getUserEmail()));
+                    }
+                } catch (JsonProcessingException e) {
+                    log.warn("Failed to parse cached user during eviction userId={}: {}", userId, e.getMessage());
+                }
+            }
+            redis.delete(idKey);
+            log.debug("Evicted cached user userId={}", userId);
+        } catch (Exception e) {
+            log.warn("Redis evictUserById failed userId={}: {}", userId, e.getMessage());
+        }
     }
 
-    private String key(String email) {
-        return email.trim().toLowerCase();
+    private String idKey(Long userId) {
+        return USER_KEY_PREFIX + userId;
+    }
+
+    private String emailKey(String email) {
+        return USER_EMAIL_KEY_PREFIX + email.trim().toLowerCase();
     }
 }

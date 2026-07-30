@@ -5,13 +5,14 @@ import com.example.AuthProject.dto.AuthResponse;
 import com.example.AuthProject.dto.DeleteUserRequest;
 import com.example.AuthProject.dto.LoginRequest;
 import com.example.AuthProject.dto.RegisterRequest;
+import com.example.AuthProject.dto.ResendOtpRequest;
 import com.example.AuthProject.dto.UpdatePasswordRequest;
 import com.example.AuthProject.dto.UpdateUsernameRequest;
 import com.example.AuthProject.dto.UserResponse;
+import com.example.AuthProject.dto.VerifyOtpRequest;
 import com.example.AuthProject.service.AuthService;
 import jakarta.validation.Valid;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,11 +24,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Slf4j
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/v1/auth")
 public class AuthController {
-    private static final Logger log = LoggerFactory.getLogger(AuthController.class);
 
     private final AuthService service;
 
@@ -39,6 +40,20 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("New User Registration processing with email={}", request.getEmail());
         ApiResponse<Void> body = service.register(request);
+        return ResponseEntity.status(body.getStatus()).body(body);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        log.info("OTP verification requested for email={}", request.getEmail());
+        ApiResponse<Void> body = service.verifyOtp(request);
+        return ResponseEntity.status(body.getStatus()).body(body);
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<ApiResponse<Void>> resendOtp(@Valid @RequestBody ResendOtpRequest request) {
+        log.info("OTP resend requested for email={}", request.getEmail());
+        ApiResponse<Void> body = service.resendOtp(request);
         return ResponseEntity.status(body.getStatus()).body(body);
     }
 
