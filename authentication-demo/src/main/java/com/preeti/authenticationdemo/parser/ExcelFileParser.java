@@ -56,7 +56,10 @@ public class ExcelFileParser implements FileParser {
 
                 if (isFirstRow) {
                     for (Cell cell : row) {
-                        headers.add(dataFormatter.formatCellValue(cell).trim());
+                        String rawHeader = dataFormatter.formatCellValue(cell).trim();
+                        // Sanitize MongoDB BSON map keys (replace . and $ with _)
+                        String cleanHeader = sanitizeKey(rawHeader);
+                        headers.add(cleanHeader);
                     }
                     isFirstRow = false;
                     continue;
@@ -74,7 +77,7 @@ public class ExcelFileParser implements FileParser {
                             ? headers.get(cellIndex)
                             : "Column_" + (cellIndex + 1);
 
-                    rowDto.addCell(headerName, value);
+                    rowDto.addCell(sanitizeKey(headerName), value);
                 }
 
                 rows.add(rowDto);
@@ -92,6 +95,11 @@ public class ExcelFileParser implements FileParser {
             log.error("Failed to parse Excel workbook", exception);
             throw new FileExtractionException("Could not extract rows/cells from Excel file: " + exception.getMessage(), exception);
         }
+    }
+
+    private String sanitizeKey(String key) {
+        if (key == null || key.isBlank()) return "";
+        return key.replace('.', '_').replace('$', '_').trim();
     }
 
     private boolean isRowEmpty(Row row, DataFormatter formatter) {

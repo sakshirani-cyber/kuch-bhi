@@ -73,22 +73,36 @@ public class FileUploadService {
         Optional<FileMetadata> existingDuplicate = fileMetadataRepository.findByUploadedByAndFileHash(username, fileHash);
         if (existingDuplicate.isPresent()) {
             FileMetadata existing = existingDuplicate.get();
-            log.info("Duplicate file detected! Reusing existing document ID: '{}'", existing.getId());
-            existing.setLastViewedTimestamp(LocalDateTime.now());
-            fileMetadataRepository.save(existing);
 
-            return FileUploadResponse.builder()
-                    .fileId(existing.getId())
-                    .storedFilename(existing.getStoredFilename())
-                    .originalFilename(existing.getOriginalFilename())
-                    .fileExtension(existing.getFileExtension())
-                    .fileSize(existing.getFileSize())
-                    .uploadedBy(existing.getUploadedBy())
-                    .isDuplicate(true)
-                    .uploadStatus(existing.getUploadStatus() != null ? existing.getUploadStatus() : "COMPLETED")
-                    .message("Duplicate file detected! Reused previously extracted data without re-processing.")
-                    .extractedContent(getStoredExtractionResponse(existing))
-                    .build();
+            boolean isPdf = "pdf".equalsIgnoreCase(existing.getFileExtension());
+            long excelCount = !isPdf ? extractedRecordRepository.findByFileId(existing.getId(), PageRequest.of(0, 1)).getTotalElements() : 0;
+            boolean hasContent = isPdf ? (existing.getFullExtractedText() != null) : (excelCount > 0);
+
+            if (!hasContent) {
+                log.info("Duplicate file hash matched for '{}', but stored extraction was missing. Re-extracting from current upload...", existing.getOriginalFilename());
+                try {
+                    fileStorageService.deleteFile(existing.getStoredFilename());
+                } catch (Exception ignored) {}
+                extractedRecordRepository.deleteByFileId(existing.getId());
+                fileMetadataRepository.deleteById(existing.getId());
+            } else {
+                log.info("Duplicate file detected! Reusing existing document ID: '{}'", existing.getId());
+                existing.setLastViewedTimestamp(LocalDateTime.now());
+                fileMetadataRepository.save(existing);
+
+                return FileUploadResponse.builder()
+                        .fileId(existing.getId())
+                        .storedFilename(existing.getStoredFilename())
+                        .originalFilename(existing.getOriginalFilename())
+                        .fileExtension(existing.getFileExtension())
+                        .fileSize(existing.getFileSize())
+                        .uploadedBy(existing.getUploadedBy())
+                        .isDuplicate(true)
+                        .uploadStatus(existing.getUploadStatus() != null ? existing.getUploadStatus() : "COMPLETED")
+                        .message("Duplicate file detected! Reused previously extracted data without re-processing.")
+                        .extractedContent(getStoredExtractionResponse(existing))
+                        .build();
+            }
         }
 
         String originalFilename = file.getOriginalFilename();
@@ -141,8 +155,7 @@ public class FileUploadService {
                         .fullRowText(fullRowText)
                         .build());
             }
-            extractedRecordRepository.saveAll(recordsToSave);
-            log.info("Persisted {} Excel rows to MongoDB collection 'extracted_records'", recordsToSave.size());
+            saveExcelRecordsInBatches(recordsToSave);
         }
 
         return FileUploadResponse.builder()
@@ -165,7 +178,6 @@ public class FileUploadService {
 
         validateOwnership(metadata, authenticatedUsername);
 
-        // Lazy Backfill / Re-Extraction for Legacy Files uploaded before persistent extraction
         ensureDocumentExtracted(metadata);
 
         metadata.setLastViewedTimestamp(LocalDateTime.now());
@@ -205,7 +217,7 @@ public class FileUploadService {
                 .fileId(metadata.getId())
                 .originalFilename(metadata.getOriginalFilename())
                 .fileType("excel")
-                .totalExtractedCount((int) recordPage.getTotalElements())
+                .totalExtractedCount(metadata.getExtractedRowCount())
                 .paginatedExcelRows(excelRowDtoPage)
                 .build();
     }
@@ -243,7 +255,7 @@ public class FileUploadService {
                                     .fullRowText(fullRowText)
                                     .build());
                         }
-                        extractedRecordRepository.saveAll(recordsToSave);
+                        saveExcelRecordsInBatches(recordsToSave);
                     }
                     fileMetadataRepository.save(metadata);
                 }
@@ -251,6 +263,16 @@ public class FileUploadService {
                 log.error("Failed lazy backfill extraction for file ID: '{}'", metadata.getId(), ex);
             }
         }
+    }
+
+    private void saveExcelRecordsInBatches(List<ExtractedRecord> recordsToSave) {
+        if (recordsToSave == null || recordsToSave.isEmpty()) return;
+        int batchSize = 1000;
+        for (int i = 0; i < recordsToSave.size(); i += batchSize) {
+            List<ExtractedRecord> batch = recordsToSave.subList(i, Math.min(i + batchSize, recordsToSave.size()));
+            extractedRecordRepository.saveAll(batch);
+        }
+        log.info("Successfully persisted {} Excel records in batches of {}", recordsToSave.size(), batchSize);
     }
 
     public Page<FileMetadataDto> getPaginatedFiles(String authenticatedUsername, int page, int size, String sortBy, String sortDirection, String search) {
@@ -265,7 +287,6 @@ public class FileUploadService {
                 metadataPage = fileMetadataRepository.findByUploadedBy(authenticatedUsername, pageable);
             }
         } else {
-            // Fallback: If anonymous/session user, return all metadata
             metadataPage = fileMetadataRepository.findAll(pageable);
         }
 

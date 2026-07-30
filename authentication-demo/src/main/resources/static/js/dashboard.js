@@ -271,6 +271,9 @@ uploadFileBtn.addEventListener('click', async () => {
 });
 
 async function openDocument(id, filename, page = 0, search = '') {
+  if (currentOpenDocId !== id) {
+    docSearchInput.value = '';
+  }
   currentOpenDocId = id;
   currentDocPage = page;
 
