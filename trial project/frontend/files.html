@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Files</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<nav>
+    <h2>User Dashboard</h2>
+    <ul>
+        <li><a href="dashboard.html">Dashboard</a></li>
+        <li><a href="files.html">Files</a></li>
+        <li><a href="update-username.html">Update Username</a></li>
+        <li><a href="update-password.html">Update Password</a></li>
+        <li><a href="#" onclick="logout()">Logout</a></li>
+    </ul>
+</nav>
+
+<div class="dashboard files-page">
+    <h2>Files</h2>
+    <div id="message"></div>
+
+    <section class="files-upload">
+        <h3>Upload a file</h3>
+        <p class="files-hint">Any file type is accepted. Text is extracted on the server (PDF, DOCX, plain text, and more).</p>
+        <p class="files-hint files-size-limit">Maximum allowed file size: <strong id="maxFileSizeLabel">10 MB</strong>.</p>
+        <div class="files-upload-row">
+            <input type="file" id="fileInput">
+            <button id="uploadBtn" type="button" class="btn">Upload</button>
+        </div>
+    </section>
+
+    <section class="files-layout">
+        <aside class="files-list-panel" aria-label="Uploaded files">
+            <h3>Your uploads</h3>
+            <ul id="fileList" class="file-list"></ul>
+            <p id="emptyList" class="files-empty">No files uploaded yet.</p>
+        </aside>
+        <div class="files-content-panel">
+            <div class="files-content-header">
+                <h3>Extracted content</h3>
+                <button id="deleteFileBtn" type="button" class="btn danger-btn file-delete-btn" hidden>Delete file</button>
+            </div>
+            <div id="fileMeta" class="file-meta">Select a file from the left to view its content.</div>
+            <pre id="fileContent" class="file-content"></pre>
+        </div>
+    </section>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/files.js"></script>
+
+</body>
+</html>

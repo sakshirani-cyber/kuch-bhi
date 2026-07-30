@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Auth App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div class="app">
+  <div class="card">
+    <div class="brand">AuthApp</div>
+
+    <!-- login -->
+    <div id="screen-login" class="screen active">
+      <h1>Sign in</h1>
+      <p class="subtitle">Enter your credentials to continue</p>
+
+      <div id="login-alert" class="alert"></div>
+
+      <form id="login-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label for="login-identifier">Username or Email <span class="required-star">*</span></label>
+          <input id="login-identifier" type="text" placeholder="username or email" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label for="login-password">Password <span class="required-star">*</span></label>
+          <input id="login-password" type="password" placeholder="password" autocomplete="current-password" required />
+        </div>
+        <button id="login-btn" class="btn btn-primary" type="submit">
+          Sign In
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="link-text">
+        No account? <button type="button" onclick="showScreen('screen-signup')">Sign up</button>
+      </div>
+    </div>
+
+    <!-- signup -->
+    <div id="screen-signup" class="screen">
+      <h1>Sign up</h1>
+      <p class="subtitle">Create a new account</p>
+
+      <div id="signup-alert" class="alert"></div>
+
+      <form id="signup-form" onsubmit="handleSignup(event)">
+        <div class="profile-grid form-grid">
+          <div class="form-group">
+            <label for="signup-username">Username <span class="required-star">*</span></label>
+            <input id="signup-username" type="text" placeholder="username" autocomplete="username" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email <span class="required-star">*</span> <span id="email-verified-badge" class="badge-verified">✔ Verified</span></label>
+            <input id="signup-email" type="email" placeholder="email" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password <span class="required-star">*</span></label>
+            <input id="signup-password" type="password" placeholder="password" autocomplete="new-password" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-confirmPassword">Confirm Password <span class="required-star">*</span></label>
+            <input id="signup-confirmPassword" type="password" placeholder="confirm password" autocomplete="new-password" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-gender">Gender <span class="required-star">*</span></label>
+            <select id="signup-gender" required>
+              <option value="" disabled selected>Select Gender</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="signup-firstName">First Name <span class="required-star">*</span></label>
+            <input id="signup-firstName" type="text" placeholder="First name" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-lastName">Last Name</label>
+            <input id="signup-lastName" type="text" placeholder="Last name" />
+          </div>
+          <div class="form-group">
+            <label for="signup-contact">Contact Number <span class="required-star">*</span></label>
+            <input id="signup-contact" type="text" placeholder="+1 234 567 8900" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-dob">Date of Birth <span class="required-star">*</span></label>
+            <input id="signup-dob" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="signup-address">Address</label>
+            <input id="signup-address" type="text" placeholder="Your address" />
+          </div>
+          <div class="form-group">
+            <label for="signup-company">Current Company</label>
+            <input id="signup-company" type="text" placeholder="Company Name" />
+          </div>
+          <div class="form-group">
+            <label for="signup-school">School</label>
+            <input id="signup-school" type="text" placeholder="School Name" />
+          </div>
+          <div class="form-group">
+            <label for="signup-college">College</label>
+            <input id="signup-college" type="text" placeholder="College Name" />
+          </div>
+        </div>
+
+        <button id="signup-btn" class="btn btn-primary" type="submit">
+          <span id="signup-btn-text">Verify Email</span>
+          <span class="spinner"></span>
+        </button>
+      </form>
+
+      <div class="link-text">
+        Have an account? <button type="button" onclick="showScreen('screen-login')">Sign in</button>
+      </div>
+    </div>
+
+    <!-- userdata -->
+    <div id="screen-dashboard" class="screen">
+      <h1>Welcome back!</h1>
+      <p class="subtitle">Here are your profile details.</p>
+
+      <div class="profile-grid">
+        <div class="profile-item">
+            <div class="profile-label">Username</div>
+            <div class="profile-value" id="dash-name"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">First Name</div>
+            <div class="profile-value" id="dash-firstname"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">Last name</div>
+            <div class="profile-value" id="dash-lastname"></div>
+        </div>
+
+        <div class="profile-item">
+            <div class="profile-label">Gender</div>
+            <div class="profile-value" id="dash-gender"></div>
+        </div>
+
+        <div class="profile-item">
+            <div class="profile-label">Email</div>
+            <div class="profile-value" id="dash-email"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">Contact</div>
+            <div class="profile-value" id="dash-contact"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">Date of Birth (Age)</div>
+            <div class="profile-value"><span id="dash-dob"></span> (<span id="dash-age"></span> yrs)</div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">Address</div>
+            <div class="profile-value" id="dash-address"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">College</div>
+            <div class="profile-value" id="dash-college"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">School</div>
+            <div class="profile-value" id="dash-school"></div>
+        </div>
+        <div class="profile-item">
+            <div class="profile-label">Company</div>
+            <div class="profile-value" id="dash-company"></div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary" onclick="openEditModal()">Edit Profile</button>
+      <button class="btn btn-secondary mt-12" onclick="handleLogout()">Sign out</button>
+    </div>
+
+    <!-- editdata -->
+    <div id="screen-edit-profile" class="screen">
+      <h1>Edit Profile</h1>
+      <p class="subtitle">Update your personal details below.</p>
+
+      <div id="edit-alert" class="alert"></div>
+
+      <form id="edit-profile-form" onsubmit="handleUpdateProfile(event)">
+        <div class="profile-grid form-grid">
+          <div class="form-group">
+            <label for="edit-firstName">First Name <span class="required-star">*</span></label>
+            <input id="edit-firstName" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-lastName">Last Name</label>
+            <input id="edit-lastName" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-gender">Gender <span class="required-star">*</span></label>
+            <select id="edit-gender" required>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit-contact">Contact Number <span class="required-star">*</span></label>
+            <input id="edit-contact" type="text" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-dob">Date of Birth <span class="required-star">*</span></label>
+            <input id="edit-dob" type="date" required />
+          </div>
+          <div class="form-group">
+            <label for="edit-address">Address</label>
+            <input id="edit-address" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-college">College</label>
+            <input id="edit-college" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-school">School</label>
+            <input id="edit-school" type="text" />
+          </div>
+          <div class="form-group">
+            <label for="edit-company">Current Company</label>
+            <input id="edit-company" type="text" />
+          </div>
+        </div>
+
+        <button id="edit-save-btn" class="btn btn-primary" type="submit">
+          Save Changes
+          <span class="spinner"></span>
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="showScreen('screen-dashboard')">Cancel</button>
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<!-- pwd -->
+<div class="modal-backdrop" id="password-modal">
+    <div class="modal-content">
+        <h1>Authentication Required</h1>
+        <p class="subtitle mb-20">Please enter your current password to edit your profile.</p>
+        
+        <div id="modal-alert" class="alert"></div>
+
+        <div class="form-group">
+            <label for="modal-password">Password <span class="required-star">*</span></label>
+            <input id="modal-password" type="password" placeholder="Enter password" required />
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="proceedToEditProfile()">Continue</button>
+        </div>
+    </div>
+</div>
+
+<!-- otp modal -->
+<div class="modal-backdrop" id="otp-modal">
+    <div class="modal-content">
+        <h1>Verify Email Address</h1>
+        <p class="subtitle mb-16">We have sent a 6-digit OTP code to <strong id="otp-target-email"></strong>.</p>
+        
+        <div id="otp-alert" class="alert"></div>
+
+        <div class="form-group">
+            <label for="otp-input">Enter OTP Code <span class="required-star">*</span></label>
+            <input id="otp-input" class="otp-input" type="text" maxlength="6" placeholder="6-digit OTP" required />
+        </div>
+
+        <div class="otp-info-row">
+            <div>Attempts remaining: <strong id="otp-tries-left" class="otp-info-value">3/3</strong></div>
+            <div>Time remaining: <strong id="otp-timer" class="otp-info-value">05:00</strong></div>
+        </div>
+
+        <div class="modal-actions gap-8">
+            <button class="btn btn-secondary" onclick="closeOtpModal()">Cancel</button>
+            <button class="btn btn-secondary" id="resend-otp-btn" onclick="handleResendOtp()">Resend OTP</button>
+            <button class="btn btn-primary" id="verify-otp-btn" onclick="handleVerifyOtp()">
+                Verify
+                <span class="spinner"></span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

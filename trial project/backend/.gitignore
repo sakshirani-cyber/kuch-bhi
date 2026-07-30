@@ -3,6 +3,12 @@ target/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+!**/src/main/**/debug/
+### Secrets / local env ###
+.env
+.env.local
+.env.*.local
+!.env.example
 
 ### STS ###
 .apt_generated
@@ -14,7 +20,7 @@ target/
 .sts4-cache
 
 ### IntelliJ IDEA ###
-.idea/
+.idea
 *.iws
 *.iml
 *.ipr
@@ -31,5 +37,4 @@ build/
 
 ### VS Code ###
 .vscode/
-.env
-AuthProject/backend/.env
+/.env.example

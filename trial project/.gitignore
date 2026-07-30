@@ -1,0 +1,17 @@
+.idea
+.junie
+.vscode
+frontend.zip
+myProject.zip
+.cursor
+
+# Secrets — never commit real credentials
+.env
+.env.local
+.env.*.local
+!**/.env.example
+
+# Uploaded user files
+uploads/
+backend/uploads/
+backend/target/test-uploads/
