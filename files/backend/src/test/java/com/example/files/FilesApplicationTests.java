@@ -1,10 +1,10 @@
-package com.example.backend;
+package com.example.files;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BackendApplicationTests {
+class FilesApplicationTests {
 
 	@Test
 	void contextLoads() {

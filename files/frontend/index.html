@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Manager</title>
+    <link rel="stylesheet" href="./css/styles.css">
+</head>
+<body>
+    <div class="container center">
+        <h1>File Manager</h1>
+        <p>Upload and manage your files</p>
+        <div class="login-buttons">
+            <a href="http://localhost:8080/oauth2/authorization/github" class="btn btn-primary">Login with GitHub</a>
+            <button onclick="continueAsGuest()" class="btn btn-secondary">Continue as Guest</button>
+        </div>
+    </div>
+    <script src="./js/app.js"></script>
+    <script>
+        async function continueAsGuest() {
+            try {
+                await apiFetch('/api/auth/me', { credentials: 'include' });
+                window.location.href = './dashboard.html';
+            } catch (e) {
+                window.location.href = './dashboard.html';
+            }
+        }
+    </script>
+</body>
+</html>
