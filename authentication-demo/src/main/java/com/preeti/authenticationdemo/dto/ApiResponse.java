@@ -25,6 +25,10 @@ public class ApiResponse<T> {
         return new ApiResponse<>(true, message, data, LocalDateTime.now());
     }
 
+    public static <T> ApiResponse<T> success(T data) {
+        return new ApiResponse<>(true, "Operation successful", data, LocalDateTime.now());
+    }
+
     public static ApiResponse<String> success(String message) {
         return new ApiResponse<>(true, message, null, LocalDateTime.now());
     }
