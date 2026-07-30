@@ -1,6 +1,8 @@
 package com.example.backend.entity;
 
 import com.example.backend.enums.Gender;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.time.LocalDate;
 
 import jakarta.persistence.Column;
@@ -71,6 +73,11 @@ public class User {
 
 	private String currentCompany;
 
+	@Builder.Default
+	@Column(nullable = false)
+	private boolean isVerified = false;
+
+	@JsonIgnore
 	public Integer getAge() {
 		if (this.dob == null) {
 			return 0;

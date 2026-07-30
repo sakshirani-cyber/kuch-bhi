@@ -72,9 +72,10 @@ public class UserService {
 
 	@Cacheable(value = "users", key = "#identifier")
 	public User findByIdentifierCached(String identifier) {
+		log.info("[Redis Cache] Cache MISS (fetching from database) for user identifier: {}", identifier);
 		return userRepository.findByIdentifier(identifier)
 				.orElseThrow(() -> {
-					log.error("User not found with identifier");
+					log.error("User not found with identifier: {}", identifier);
 					return new ResourceNotFoundException("USER_NOT_FOUND");
 				});
 	}
