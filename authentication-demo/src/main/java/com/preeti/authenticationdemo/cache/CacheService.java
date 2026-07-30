@@ -3,9 +3,13 @@ package com.preeti.authenticationdemo.cache;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.preeti.authenticationdemo.model.User;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -19,6 +23,12 @@ public class CacheService {
     private final Cache<String, String> otpCache;
     private final Cache<String, Integer> otpAttemptsCache;
 
+    @Autowired(required = false)
+    private RedisTemplate<String, Object> redisTemplate;
+
+    @Autowired(required = false)
+    private StringRedisTemplate stringRedisTemplate;
+
     public CacheService(Cache<String, User> userCache,
                         Cache<String, String> otpCache,
                         Cache<String, Integer> otpAttemptsCache) {
@@ -30,34 +40,67 @@ public class CacheService {
     // ================= User Profile Cache (10 min TTL) =================
 
     public Optional<User> getUser(String username) {
+        String key = buildUserKey(username);
+        if (redisTemplate != null) {
+            try {
+                Object cachedObj = redisTemplate.opsForValue().get(key);
+                if (cachedObj instanceof User user) {
+                    log.debug("Redis Cache HIT for username '{}'", username);
+                    return Optional.of(user);
+                }
+            } catch (Exception exception) {
+                log.warn("Redis read failed for username '{}', trying Caffeine fallback: {}", username, exception.getMessage());
+            }
+        }
+
         try {
-            User cachedUser = userCache.getIfPresent(buildUserKey(username));
+            User cachedUser = userCache.getIfPresent(key);
             if (cachedUser != null) {
-                log.debug("Cache HIT for username '{}'", username);
+                log.debug("Caffeine Cache HIT for username '{}'", username);
                 return Optional.of(cachedUser);
             }
-            log.debug("Cache MISS for username '{}'", username);
         } catch (Exception exception) {
-            log.warn("Cache read failed for username '{}': falling back to database", username, exception);
+            log.warn("Caffeine read failed for username '{}'", username, exception);
         }
+
         return Optional.empty();
     }
 
     public void putUser(User user) {
+        String key = buildUserKey(user.getUsername());
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.opsForValue().set(key, user, 10, TimeUnit.MINUTES);
+                log.debug("Stored user profile for '{}' in Redis (TTL 10m)", user.getUsername());
+            } catch (Exception exception) {
+                log.warn("Redis write failed for username '{}': {}", user.getUsername(), exception.getMessage());
+            }
+        }
+
         try {
-            userCache.put(buildUserKey(user.getUsername()), user);
-            log.debug("Cached user profile for '{}'", user.getUsername());
+            userCache.put(key, user);
+            log.debug("Stored user profile for '{}' in Caffeine cache", user.getUsername());
         } catch (Exception exception) {
-            log.warn("Cache write failed for username '{}'", user.getUsername(), exception);
+            log.warn("Caffeine write failed for username '{}'", user.getUsername(), exception);
         }
     }
 
     public void evictUser(String username) {
+        String key = buildUserKey(username);
+        if (redisTemplate != null) {
+            try {
+                redisTemplate.delete(key);
+                log.debug("Evicted user '{}' from Redis cache", username);
+            } catch (Exception exception) {
+                log.warn("Redis evict failed for username '{}': {}", username, exception.getMessage());
+            }
+        }
+
         try {
-            userCache.invalidate(buildUserKey(username));
-            log.debug("Evicted user '{}' from profile cache", username);
+            userCache.invalidate(key);
+            log.debug("Evicted user '{}' from Caffeine cache", username);
         } catch (Exception exception) {
-            log.warn("Cache evict failed for username '{}'", username, exception);
+            log.warn("Caffeine evict failed for username '{}'", username, exception);
         }
     }
 
@@ -65,58 +108,124 @@ public class CacheService {
 
     public void saveOtp(String email, String otp) {
         String normalizedEmail = email.trim().toLowerCase();
+        String otpKey = buildOtpKey(normalizedEmail);
+        String attemptsKey = buildAttemptsKey(normalizedEmail);
+
+        if (stringRedisTemplate != null) {
+            try {
+                stringRedisTemplate.opsForValue().set(otpKey, otp, 5, TimeUnit.MINUTES);
+                stringRedisTemplate.opsForValue().set(attemptsKey, "0", 5, TimeUnit.MINUTES);
+                log.debug("Stored OTP for email '{}' in Redis (TTL 5m)", normalizedEmail);
+            } catch (Exception exception) {
+                log.warn("Redis saveOtp failed for email '{}': {}", normalizedEmail, exception.getMessage());
+            }
+        }
+
         try {
-            otpCache.put(buildOtpKey(normalizedEmail), otp);
-            otpAttemptsCache.put(buildAttemptsKey(normalizedEmail), 0);
+            otpCache.put(otpKey, otp);
+            otpAttemptsCache.put(attemptsKey, 0);
             log.debug("Stored OTP for email '{}' in Caffeine cache", normalizedEmail);
         } catch (Exception exception) {
-            log.warn("Failed to store OTP in cache for email '{}'", normalizedEmail, exception);
+            log.warn("Caffeine saveOtp failed for email '{}'", normalizedEmail, exception);
         }
     }
 
     public Optional<String> getOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();
+        String otpKey = buildOtpKey(normalizedEmail);
+
+        if (stringRedisTemplate != null) {
+            try {
+                String redisOtp = stringRedisTemplate.opsForValue().get(otpKey);
+                if (redisOtp != null) {
+                    return Optional.of(redisOtp);
+                }
+            } catch (Exception exception) {
+                log.warn("Redis getOtp failed for email '{}': {}", normalizedEmail, exception.getMessage());
+            }
+        }
+
         try {
-            String otp = otpCache.getIfPresent(buildOtpKey(normalizedEmail));
-            return Optional.ofNullable(otp);
+            String caffeineOtp = otpCache.getIfPresent(otpKey);
+            return Optional.ofNullable(caffeineOtp);
         } catch (Exception exception) {
-            log.warn("Failed to read OTP from cache for email '{}'", normalizedEmail, exception);
+            log.warn("Caffeine getOtp failed for email '{}'", normalizedEmail, exception);
             return Optional.empty();
         }
     }
 
     public void invalidateOtp(String email) {
         String normalizedEmail = email.trim().toLowerCase();
+        String otpKey = buildOtpKey(normalizedEmail);
+        String attemptsKey = buildAttemptsKey(normalizedEmail);
+
+        if (stringRedisTemplate != null) {
+            try {
+                stringRedisTemplate.delete(otpKey);
+                stringRedisTemplate.delete(attemptsKey);
+                log.debug("Invalidated Redis OTP for email '{}'", normalizedEmail);
+            } catch (Exception exception) {
+                log.warn("Redis invalidateOtp failed for email '{}': {}", normalizedEmail, exception.getMessage());
+            }
+        }
+
         try {
-            otpCache.invalidate(buildOtpKey(normalizedEmail));
-            otpAttemptsCache.invalidate(buildAttemptsKey(normalizedEmail));
-            log.debug("Invalidated OTP & attempt counter for email '{}'", normalizedEmail);
+            otpCache.invalidate(otpKey);
+            otpAttemptsCache.invalidate(attemptsKey);
+            log.debug("Invalidated Caffeine OTP for email '{}'", normalizedEmail);
         } catch (Exception exception) {
-            log.warn("Failed to invalidate OTP in cache for email '{}'", normalizedEmail, exception);
+            log.warn("Caffeine invalidateOtp failed for email '{}'", normalizedEmail, exception);
         }
     }
 
     public int incrementAttempts(String email) {
         String normalizedEmail = email.trim().toLowerCase();
+        String attemptsKey = buildAttemptsKey(normalizedEmail);
+
+        if (stringRedisTemplate != null) {
+            try {
+                Long incremented = stringRedisTemplate.opsForValue().increment(attemptsKey);
+                stringRedisTemplate.expire(attemptsKey, 5, TimeUnit.MINUTES);
+                if (incremented != null) {
+                    otpAttemptsCache.put(attemptsKey, incremented.intValue());
+                    return incremented.intValue();
+                }
+            } catch (Exception exception) {
+                log.warn("Redis incrementAttempts failed for email '{}': {}", normalizedEmail, exception.getMessage());
+            }
+        }
+
         try {
-            String attemptsKey = buildAttemptsKey(normalizedEmail);
             Integer current = otpAttemptsCache.getIfPresent(attemptsKey);
             int updated = (current != null ? current : 0) + 1;
             otpAttemptsCache.put(attemptsKey, updated);
             return updated;
         } catch (Exception exception) {
-            log.warn("Failed to increment OTP attempts for email '{}'", normalizedEmail, exception);
+            log.warn("Caffeine incrementAttempts failed for email '{}'", normalizedEmail, exception);
             return 1;
         }
     }
 
     public int getAttempts(String email) {
         String normalizedEmail = email.trim().toLowerCase();
+        String attemptsKey = buildAttemptsKey(normalizedEmail);
+
+        if (stringRedisTemplate != null) {
+            try {
+                String val = stringRedisTemplate.opsForValue().get(attemptsKey);
+                if (val != null) {
+                    return Integer.parseInt(val);
+                }
+            } catch (Exception exception) {
+                log.warn("Redis getAttempts failed for email '{}': {}", normalizedEmail, exception.getMessage());
+            }
+        }
+
         try {
-            Integer attempts = otpAttemptsCache.getIfPresent(buildAttemptsKey(normalizedEmail));
+            Integer attempts = otpAttemptsCache.getIfPresent(attemptsKey);
             return attempts != null ? attempts : 0;
         } catch (Exception exception) {
-            log.warn("Failed to read OTP attempts for email '{}'", normalizedEmail, exception);
+            log.warn("Caffeine getAttempts failed for email '{}'", normalizedEmail, exception);
             return 0;
         }
     }
