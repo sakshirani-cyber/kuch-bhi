@@ -1,6 +1,7 @@
 package com.preeti.authenticationdemo.controller;
 
 import com.preeti.authenticationdemo.dto.ApiResponse;
+import com.preeti.authenticationdemo.dto.AuthResponse;
 import com.preeti.authenticationdemo.dto.DeleteUserRequest;
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.ResendOtpRequest;
@@ -52,9 +53,9 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<String>> login(@Valid @RequestBody LoginRequest request) {
-        String result = authService.login(request);
-        return ResponseEntity.ok(ApiResponse.success(result));
+    public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = authService.login(request);
+        return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     @PutMapping("/update/username")

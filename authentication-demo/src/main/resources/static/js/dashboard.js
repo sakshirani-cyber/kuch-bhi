@@ -1,7 +1,11 @@
 const urlParams = new URLSearchParams(window.location.search);
 const urlUsername = urlParams.get('username');
+const urlToken = urlParams.get('token');
 if (urlUsername) {
   sessionStorage.setItem('username', urlUsername);
+}
+if (urlToken) {
+  sessionStorage.setItem('token', urlToken);
 }
 
 const storedUsername = sessionStorage.getItem('username');
@@ -129,6 +133,7 @@ deleteBtn.addEventListener('click', async () => {
 
   if (result.ok) {
     sessionStorage.removeItem('username');
+    sessionStorage.removeItem('token');
     alert('Your account has been deleted.');
     window.location.href = 'index.html';
   } else {
@@ -138,5 +143,6 @@ deleteBtn.addEventListener('click', async () => {
 
 document.getElementById('logoutBtn').addEventListener('click', () => {
   sessionStorage.removeItem('username');
+  sessionStorage.removeItem('token');
   window.location.href = 'index.html';
 });

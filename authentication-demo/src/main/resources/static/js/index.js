@@ -54,7 +54,13 @@ loginForm.addEventListener('submit', async (e) => {
   setLoading(loginSubmit, false);
 
   if (result.ok) {
-    sessionStorage.setItem('username', username);
+    const authData = result.payload && result.payload.data ? result.payload.data : null;
+    if (authData && authData.accessToken) {
+      sessionStorage.setItem('token', authData.accessToken);
+      sessionStorage.setItem('username', authData.username || username);
+    } else {
+      sessionStorage.setItem('username', username);
+    }
     window.location.href = 'dashboard.html';
   } else {
     const errorText = extractErrorText(result.payload);

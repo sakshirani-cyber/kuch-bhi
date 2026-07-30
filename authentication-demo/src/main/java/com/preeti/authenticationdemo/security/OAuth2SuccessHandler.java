@@ -21,14 +21,16 @@ import java.util.Optional;
 public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private final UserRepository userRepository;
+    private final JwtService jwtService;
 
-    public OAuth2SuccessHandler(UserRepository userRepository) {
+    public OAuth2SuccessHandler(UserRepository userRepository, JwtService jwtService) {
         this.userRepository = userRepository;
+        this.jwtService = jwtService;
     }
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                        Authentication authentication) throws IOException, ServletException {
+                                         Authentication authentication) throws IOException, ServletException {
         OAuth2AuthenticationToken authToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oAuth2User = authToken.getPrincipal();
         String registrationId = authToken.getAuthorizedClientRegistrationId();
@@ -40,9 +42,10 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         Optional<User> userOptional = userRepository.findByEmail(normalizedEmail);
         String username = userOptional.map(User::getUsername).orElse("User");
 
-        log.info("OAuth2 login successful for email '{}', resolving to username '{}'", normalizedEmail, username);
+        String token = jwtService.generateToken(username, normalizedEmail);
+        log.info("OAuth2 login successful for email '{}', generated JWT token for username '{}'", normalizedEmail, username);
 
-        getRedirectStrategy().sendRedirect(request, response, "/dashboard.html?username=" + username);
+        getRedirectStrategy().sendRedirect(request, response, "/dashboard.html?token=" + token + "&username=" + username);
     }
 
     private String extractEmail(String registrationId, Map<String, Object> attributes) {

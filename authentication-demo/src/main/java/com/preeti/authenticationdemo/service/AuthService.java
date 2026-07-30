@@ -1,6 +1,7 @@
 package com.preeti.authenticationdemo.service;
 
 import com.preeti.authenticationdemo.cache.CacheService;
+import com.preeti.authenticationdemo.dto.AuthResponse;
 import com.preeti.authenticationdemo.dto.DeleteUserRequest;
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.ResendOtpRequest;
@@ -14,6 +15,7 @@ import com.preeti.authenticationdemo.exception.InvalidCredentialsException;
 import com.preeti.authenticationdemo.exception.UserAlreadyExistsException;
 import com.preeti.authenticationdemo.model.User;
 import com.preeti.authenticationdemo.repository.UserRepository;
+import com.preeti.authenticationdemo.security.JwtService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -37,18 +39,21 @@ public class AuthService {
     private final MongoTemplate mongoTemplate;
     private final CacheService cacheService;
     private final OtpNotificationService otpNotificationService;
+    private final JwtService jwtService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        MongoTemplate mongoTemplate,
                        CacheService cacheService,
-                       OtpNotificationService otpNotificationService) {
+                       OtpNotificationService otpNotificationService,
+                       JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.mongoTemplate = mongoTemplate;
         this.cacheService = cacheService;
         this.otpNotificationService = otpNotificationService;
+        this.jwtService = jwtService;
     }
 
     @Transactional
@@ -91,7 +96,7 @@ public class AuthService {
         return "User registered successfully. Please verify the OTP sent to your email.";
     }
 
-    public String login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request) {
         String username = request.getUsername().trim();
         log.info("Login attempt for username '{}'", username);
 
@@ -108,8 +113,9 @@ public class AuthService {
             throw new IllegalStateException("Account not verified. Please verify your OTP first.");
         }
 
-        log.info("Login successful for username '{}'", username);
-        return "Login successful";
+        String accessToken = jwtService.generateToken(user.getUsername(), user.getEmail());
+        log.info("Login successful for username '{}'. JWT token issued.", username);
+        return new AuthResponse(accessToken, user.getUsername(), user.getEmail());
     }
 
     @Transactional

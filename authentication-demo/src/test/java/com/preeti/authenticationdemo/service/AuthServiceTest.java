@@ -1,6 +1,7 @@
 package com.preeti.authenticationdemo.service;
 
 import com.preeti.authenticationdemo.cache.CacheService;
+import com.preeti.authenticationdemo.dto.AuthResponse;
 import com.preeti.authenticationdemo.dto.LoginRequest;
 import com.preeti.authenticationdemo.dto.SignupRequest;
 import com.preeti.authenticationdemo.dto.VerifyOtpRequest;
@@ -8,6 +9,7 @@ import com.preeti.authenticationdemo.exception.InvalidCredentialsException;
 import com.preeti.authenticationdemo.exception.UserAlreadyExistsException;
 import com.preeti.authenticationdemo.model.User;
 import com.preeti.authenticationdemo.repository.UserRepository;
+import com.preeti.authenticationdemo.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,9 @@ class AuthServiceTest {
 
     @Mock
     private OtpNotificationService otpNotificationService;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private AuthService authService;
@@ -154,17 +159,20 @@ class AuthServiceTest {
     }
 
     @Test
-    @DisplayName("Login: Verified user logs in successfully")
+    @DisplayName("Login: Verified user logs in successfully returning JWT AuthResponse")
     void login_VerifiedUser_Success() {
         LoginRequest loginRequest = new LoginRequest("Meena", "Password1!");
         when(cacheService.getUser("Meena")).thenReturn(Optional.empty());
         when(userRepository.findByUsername("Meena")).thenReturn(Optional.of(verifiedTestUser));
         when(passwordEncoder.matches("Password1!", "encodedPassword1!")).thenReturn(true);
+        when(jwtService.generateToken("Meena", "meena234@cdjnd.com")).thenReturn("mock-jwt-token");
 
-        String result = authService.login(loginRequest);
+        AuthResponse result = authService.login(loginRequest);
 
-        assertEquals("Login successful", result);
-        verify(cacheService).putUser(verifiedTestUser);
+        assertNotNull(result);
+        assertEquals("mock-jwt-token", result.getAccessToken());
+        assertEquals("Bearer", result.getTokenType());
+        assertEquals("Meena", result.getUsername());
     }
 
     @Test
