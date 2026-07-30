@@ -3,11 +3,13 @@ package com.example.AuthProject.controller;
 import com.example.AuthProject.dto.ApiResponse;
 import com.example.AuthProject.exception.ApiException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.util.unit.DataSize;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -27,6 +31,14 @@ import java.util.Map;
 @Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private final DataSize maxFileSize;
+
+    public GlobalExceptionHandler(
+            @Value("${app.files.max-size:10MB}") DataSize maxFileSize
+    ) {
+        this.maxFileSize = maxFileSize;
+    }
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
@@ -164,6 +176,40 @@ public class GlobalExceptionHandler {
                 ));
     }
 
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        log.warn("Upload rejected: file exceeds max size {}", maxFileSize);
+        return ResponseEntity
+                .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(ApiResponse.failure(
+                        HttpStatus.PAYLOAD_TOO_LARGE,
+                        "File upload failed",
+                        Map.of("file", maxFileSizeExceededMessage())
+                ));
+    }
+
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<ApiResponse<Void>> handleMultipart(MultipartException ex) {
+        if (isMaxUploadSizeExceeded(ex)) {
+            log.warn("Upload rejected (multipart): file exceeds max size {}", maxFileSize);
+            return ResponseEntity
+                    .status(HttpStatus.PAYLOAD_TOO_LARGE)
+                    .body(ApiResponse.failure(
+                            HttpStatus.PAYLOAD_TOO_LARGE,
+                            "File upload failed",
+                            Map.of("file", maxFileSizeExceededMessage())
+                    ));
+        }
+        log.warn("Multipart request failed: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.failure(
+                        HttpStatus.BAD_REQUEST,
+                        "File upload failed",
+                        Map.of("file", "Could not read the uploaded file. Please try again.")
+                ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleGeneric(Exception ex) {
         log.error("Unhandled exception", ex);
@@ -174,5 +220,36 @@ public class GlobalExceptionHandler {
                         "Internal server error",
                         Map.of("error", "Something went wrong. Please try again.")
                 ));
+    }
+
+    private String maxFileSizeExceededMessage() {
+        return "File exceeds the maximum allowed size of " + formatDataSize(maxFileSize);
+    }
+
+    private static boolean isMaxUploadSizeExceeded(Throwable ex) {
+        Throwable current = ex;
+        while (current != null) {
+            if (current instanceof MaxUploadSizeExceededException) {
+                return true;
+            }
+            String msg = current.getMessage();
+            if (msg != null && msg.toLowerCase().contains("size")
+                    && (msg.toLowerCase().contains("exceed") || msg.toLowerCase().contains("limit"))) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private static String formatDataSize(DataSize size) {
+        long bytes = size.toBytes();
+        if (bytes % (1024L * 1024L) == 0) {
+            return (bytes / (1024L * 1024L)) + " MB";
+        }
+        if (bytes % 1024L == 0) {
+            return (bytes / 1024L) + " KB";
+        }
+        return bytes + " bytes";
     }
 }

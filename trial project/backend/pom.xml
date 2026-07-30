@@ -111,6 +111,18 @@
 			<version>8.19.0</version>
 		</dependency>
 
+		<!-- File content extraction (PDF, DOCX, etc.) -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>2.9.4</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-parsers-standard-package</artifactId>
+			<version>2.9.4</version>
+		</dependency>
+
 		<!-- Reads backend/.env and exposes values for ${...} in application.properties -->
 		<dependency>
 			<groupId>io.github.cdimascio</groupId>
