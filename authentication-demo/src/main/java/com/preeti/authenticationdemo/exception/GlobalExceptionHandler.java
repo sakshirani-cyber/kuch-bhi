@@ -76,6 +76,62 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
     }
 
+    @ExceptionHandler(EmptyFileException.class)
+    public ResponseEntity<ErrorResponse> handleEmptyFile(EmptyFileException exception) {
+        log.warn("File upload rejected - empty file: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(InvalidFileTypeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFileType(InvalidFileTypeException exception) {
+        log.warn("File upload rejected - invalid file type: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
+
+    @ExceptionHandler(FileStorageException.class)
+    public ResponseEntity<ErrorResponse> handleFileStorage(FileStorageException exception) {
+        log.error("File storage error: {}", exception.getMessage(), exception);
+        ErrorResponse response = ErrorResponse.of(HttpStatus.INTERNAL_SERVER_ERROR.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+    }
+
+    @ExceptionHandler(FileExtractionException.class)
+    public ResponseEntity<ErrorResponse> handleFileExtraction(FileExtractionException exception) {
+        log.error("File content extraction error: {}", exception.getMessage(), exception);
+        ErrorResponse response = ErrorResponse.of(HttpStatus.UNPROCESSABLE_ENTITY.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ErrorResponse> handleMaxUploadSize(org.springframework.web.multipart.MaxUploadSizeExceededException exception) {
+        log.warn("File upload size limit exceeded: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.PAYLOAD_TOO_LARGE.value(), "Uploaded file size exceeds maximum allowed limit");
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(response);
+    }
+
+    @ExceptionHandler(DuplicateFileException.class)
+    public ResponseEntity<ErrorResponse> handleDuplicateFile(DuplicateFileException exception) {
+        log.info("Duplicate file upload detected: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.CONFLICT.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+    }
+
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleDocumentNotFound(DocumentNotFoundException exception) {
+        log.warn("Document not found: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.NOT_FOUND.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(UnauthorizedAccessException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorizedAccess(UnauthorizedAccessException exception) {
+        log.warn("Unauthorized document access attempt: {}", exception.getMessage());
+        ErrorResponse response = ErrorResponse.of(HttpStatus.FORBIDDEN.value(), exception.getMessage());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException exception) {
         ErrorResponse response = ErrorResponse.of(HttpStatus.BAD_REQUEST.value(), exception.getMessage());

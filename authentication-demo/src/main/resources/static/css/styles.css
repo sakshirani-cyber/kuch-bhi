@@ -503,6 +503,151 @@ button.loading .btn-label {
 }
 
 /* ============================
+   File Upload & Extraction UI
+   ============================ */
+.card-wide {
+  max-width: 680px;
+}
+
+.file-dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 24px 16px;
+  text-align: center;
+  background: #fafafd;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.file-dropzone:hover,
+.file-dropzone.dragover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.file-dropzone svg {
+  width: 38px;
+  height: 38px;
+  color: var(--color-primary);
+  margin-bottom: 8px;
+}
+
+.file-dropzone p {
+  margin: 4px 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.file-dropzone span {
+  font-size: 11.5px;
+  color: var(--color-text-muted);
+}
+
+.file-input-hidden {
+  display: none;
+}
+
+.extracted-container {
+  margin-top: 16px;
+  background: #f8fafc;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.extracted-container h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.extracted-text-box {
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12.5px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 200px;
+  overflow-y: auto;
+  color: #334155;
+}
+
+.excel-data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+  background: #fff;
+}
+
+.excel-data-table th,
+.excel-data-table td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 10px;
+  text-align: left;
+}
+
+.excel-data-table th {
+  background: #f1f5f9;
+  font-weight: 600;
+  color: #475569;
+}
+
+.recent-files-list {
+  margin-top: 16px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.file-info svg {
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary);
+}
+
+.file-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.file-sub {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.file-actions button {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ============================
    Responsive adjustments
    ============================ */
 @media (max-width: 480px) {
@@ -529,3 +674,4 @@ button.loading .btn-label {
     width: 100%;
   }
 }
+
